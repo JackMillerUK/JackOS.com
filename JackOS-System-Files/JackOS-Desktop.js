@@ -76,7 +76,7 @@ function Desktop_closeAllApps(){
 #flappyApp,\
 #tetrisApp,\
 #snakeApp,\
-#installedAppRuntime'
+#installedAppRuntime, .installed-app-window'
   ).forEach(win => {
 
     win.style.display='none';
@@ -89,6 +89,10 @@ function Desktop_closeAllApps(){
   });
 
   DesktopMinimisedApps.clear();
+
+  if(typeof InstalledAppsState!=='undefined'){
+    [...InstalledAppsState.windows.keys()].forEach(InstalledApps_removeWindow);
+  }
 
   try{
 
@@ -340,6 +344,7 @@ ready(Login_applyUser);
 function Desktop_windowAppId(id){
 
   return ({
+    explorer:'explorer',
     browserWin:'browser',
     calcApp:'calculator',
     jcamApp:'camera',
@@ -360,6 +365,11 @@ function Desktop_appAvailable(id){ const appId=Desktop_windowAppId(id); return a
 
 
 function Desktop_appIcon(id){
+
+ if(typeof InstalledApps_appForWindow==='function'){
+    const installed=InstalledApps_appForWindow(id);
+    if(installed) return InstalledApps_icon(installed);
+  }
 
  if(
     id === 'installedAppRuntime' &&
@@ -391,6 +401,7 @@ function Desktop_appIcon(id){
 function Desktop_appName(id){
 
   const names = {
+    explorer: 'Explorer',
     browser: 'Browser',
     calculator: 'Calculator',
     camera: 'Camera',
@@ -404,7 +415,7 @@ function Desktop_appName(id){
     appstore: 'App Store'
   };
 
-  return names[id] || String(id);
+  return (typeof InstalledApps_appForWindow==='function'&&InstalledApps_appForWindow(id)?.name)||names[id]||String(id);
 
 }
 
@@ -421,6 +432,7 @@ const DesktopWindows = {
   z: 100,
 
   ids: [
+    'explorer',
     'browserWin',
     'calcApp',
     'jcamApp',
@@ -431,12 +443,12 @@ const DesktopWindows = {
     'appStoreApp',
     'flappyApp',
     'tetrisApp',
-    'snakeApp',
-    'installedAppRuntime'
+    'snakeApp'
   ],
 
   names: {
 
+    explorer: 'Explorer',
     browserWin: 'Browser',
     calcApp: 'Calculator',
     jcamApp: 'Camera',
@@ -538,11 +550,7 @@ ids.forEach(id=>{
     'button'
   );
 
-const active =
-  open.includes(id) ||
-  open.includes(
-    id + 'App'
-  );
+const active=open.some(openId=>openId===id||Desktop_windowAppId(openId)===id);
 
 button.className =
   'taskbar-app' +
@@ -561,19 +569,8 @@ button.append(Desktop_appIcon(id));
   
   
   button.onclick=()=>{
-
-  DesktopMinimisedApps.delete(id);
-
-  win.style.display='block';
-
-  win.classList.remove(
-    'window-minimized'
-  );
-
-  win.style.zIndex=
-    ++DesktopWindows.z;
-
-  Desktop_refreshTaskbar();
+  if(typeof WindowManager!=='undefined'&&WindowManager.get(win.id)) WindowManager.show(win.id);
+  else { DesktopMinimisedApps.delete(id); win.style.display='block'; win.classList.remove('window-minimized'); win.style.zIndex=++DesktopWindows.z; Desktop_refreshTaskbar(); }
 };
   button.addEventListener('mouseenter',()=>{
 
@@ -584,11 +581,7 @@ button.append(Desktop_appIcon(id));
 
   if(!tip) return;
 
-tip.textContent =
-  id === 'installedAppRuntime' &&
-  InstalledAppActive
-    ? InstalledAppActive.name
-    : Desktop_appName(id);
+tip.textContent=Desktop_appName(id);
 
   tip.style.display='block';
 
@@ -658,6 +651,7 @@ DesktopWindows.ids
   .filter(id =>
 
     id !== 'installedAppRuntime' &&
+    !id.startsWith('installedApp-') &&
 
     Desktop_appAvailable(id) &&
 
@@ -757,110 +751,14 @@ InstalledAppsState.apps
 
 
 
-  function Desktop_initWindows(){ DesktopWindows.z=100;
-  
-  
-  DesktopWindows.ids.forEach(id=>{ const win=document.getElementById(id); if(!win||win.dataset.windowReady) return; win.dataset.windowReady='true'; const header=win.querySelector('.header,.game-header,.app-window-header,#browserBar,#calcHeader,#jcamHeader,#settingsHeader,#photosHeader,#musicHeader'); if(!header) return; const controls=document.createElement('div'); controls.className='window-controls'; const min=document.createElement('button'); min.className='window-control'; min.textContent='−'; min.title='Minimize'; const max=document.createElement('button'); max.className='window-control'; max.textContent='□'; max.title='Maximize'; const close=document.createElement('button'); close.className='window-control close'; close.textContent='×'; close.title='Close'; controls.append(min,max,close); header.append(controls); const focus=()=>{ win.style.zIndex=++DesktopWindows.z; Desktop_refreshTaskbar(); }; win.addEventListener('pointerdown',focus); 
-
-
-
-min.onclick=e=>{
-  e.stopPropagation();
-
-  DesktopMinimisedApps.add(id);
-
-  win.style.display='none';
-
-  Desktop_refreshTaskbar();
-};
-
-
-max.onclick=e=>{ e.stopPropagation(); win.classList.toggle('window-maximized'); focus(); };
- 
-
-close.onclick=e=>{
-
-  e.stopPropagation();
-
-  DesktopMinimisedApps.delete(id);
-
-  const appId =
-    Desktop_windowAppId(id);
-
-  const app =
-    APP_REGISTRY[appId];
-
-  if(app?.close){
-
-    app.close();
-
-  }else{
-
-    win.style.display='none';
-
-  }
-
-  Desktop_refreshTaskbar();
-
-};
- 
- let drag=null; 
-
-
-  
-  
-header.addEventListener('pointerdown',e=>{
-
-  if(e.target.closest('button,input'))
-    return;
-
-  const rect = win.getBoundingClientRect();
-
-  // convert centred window into fixed pixel position
-  win.style.left = rect.left + 'px';
-  win.style.top = rect.top + 'px';
-  win.style.transform = 'none';
-
-  drag = {
-    x: e.clientX - rect.left,
-    y: e.clientY - rect.top
-  };
-
-});
-
- header.addEventListener('pointermove',e=>{
-  if(!drag || win.classList.contains('window-maximized'))
-    return;
-
-  win.style.left =
-    Math.max(4, e.clientX - drag.x) + 'px';
-
-  win.style.top =
-    Math.max(4, e.clientY - drag.y) + 'px';
-});
-
-const stopDrag = ()=>{
-  drag = null;
-};
-
-header.addEventListener(
-  'pointerup',
-  stopDrag
-);
-
-header.addEventListener(
-  'pointercancel',
-  stopDrag
-);
-
-document.addEventListener(
-  'pointerup',
-  stopDrag
-);
-
-
- 
- ['n','s','e','w','nw','ne','sw','se'].forEach(direction=>{ const handle=document.createElement('div'); handle.className='window-resize-handle '+direction; win.append(handle); let resize=null; handle.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); resize={direction,startX:e.clientX,startY:e.clientY,left:win.offsetLeft,top:win.offsetTop,width:win.offsetWidth,height:win.offsetHeight}; handle.setPointerCapture(e.pointerId); }); handle.addEventListener('pointermove',e=>{ if(!resize||win.classList.contains('window-maximized')) return; const dx=e.clientX-resize.startX, dy=e.clientY-resize.startY, minW=260, minH=180; let width=resize.width,height=resize.height,left=resize.left,top=resize.top; if(resize.direction.includes('e')) width=Math.max(minW,resize.width+dx); if(resize.direction.includes('s')) height=Math.max(minH,resize.height+dy); if(resize.direction.includes('w')){ width=Math.max(minW,resize.width-dx); left=resize.left+resize.width-width; } if(resize.direction.includes('n')){ height=Math.max(minH,resize.height-dy); top=resize.top+resize.height-height; } win.style.width=width+'px'; win.style.height=height+'px'; win.style.left=Math.max(4,left)+'px'; win.style.top=Math.max(4,top)+'px'; win.style.transform='none'; }); handle.addEventListener('pointerup',()=>{ resize=null; }); }); }); }
+function Desktop_initWindows(){
+  DesktopWindows.z=Math.max(DesktopWindows.z,100);
+  DesktopWindows.ids.forEach(id=>{
+    const win=document.getElementById(id);
+    if(!win||win.dataset.windowReady) return;
+    WindowManager.attach({id,title:Desktop_appName(id),element:win});
+  });
+}
 ready(()=>{ Desktop_initWindows(); const search=document.getElementById('taskbarSearch'); search?.addEventListener('input',()=>Desktop_searchApps(search.value)); const desktop=document.querySelector('#desktop .desktop'); desktop?.addEventListener('click',()=>setTimeout(Desktop_refreshTaskbar,0)); 
 });
 // ===== Setup (first account admin) =====

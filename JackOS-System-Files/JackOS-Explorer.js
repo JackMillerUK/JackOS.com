@@ -3,7 +3,7 @@
 const ExplorerState={ files:[], driveRoot:null, driveCwd:null, cwdPath:[], virtualPath:[], selectedIndex:-1, multi:false, multiSet:new Set(), mode:'read' };
 
 
-function Explorer_open(){ document.getElementById('explorer').style.display='block'; if(ExplorerState.virtualPath.length){ ExplorerState.virtualPath=[]; ExplorerState.cwdPath=[]; Explorer_listDriveCwd(); } if(!ExplorerState.driveRoot) Explorer_showHome(); }
+function Explorer_open(){ const win=document.getElementById('explorer'); if(win) win.style.display='block'; if(ExplorerState.virtualPath.length){ ExplorerState.virtualPath=[]; ExplorerState.cwdPath=[]; Explorer_listDriveCwd(); } if(!ExplorerState.driveRoot) Explorer_showHome(); if(typeof WindowManager!=='undefined'&&WindowManager.get('explorer')) WindowManager.focus('explorer'); }
 
 
 function Explorer_close(){

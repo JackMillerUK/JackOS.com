@@ -24,7 +24,9 @@ function Users_guest(){ return Users_all().find(u=>u && u.guest) || null; }
 function Users_addGuest(){ if(Users_guest()) return false; const list=Users_all(); list.push({name:'Guest', pass:'', role:'user', guest:true}); Users_save(list); return true; }
 function UserData_key(name=currentUser){ return encodeURIComponent(String(name||'Guest')).replace(/%/g,'_'); }
 function UserData_resetRuntime(){ try{ ExplorerState.driveRoot=null; ExplorerState.driveCwd=null; ExplorerState.cwdPath=[]; ExplorerState.virtualPath=[]; }catch(e){} InstalledApps_scan?.(); }
-async function UserData_dir(name=currentUser){ const root=await navigator.storage.getDirectory(); const users=await root.getDirectoryHandle('Users',{create:true}); const dir=await users.getDirectoryHandle(UserData_key(name),{create:true}); if(name===Users_all()[0]?.name && !localStorage.getItem('jackosLegacyStorageMigrated')){ const copy=async(source,target)=>{ for await(const entry of source.values()){ if(entry.kind==='directory'){ const child=await target.getDirectoryHandle(entry.name,{create:true}); await copy(entry,child); } else { const file=await entry.getFile(); const writable=await (await target.getFileHandle(entry.name,{create:true})).createWritable(); await writable.write(await file.arrayBuffer()); await writable.close(); } } }; for(const legacyName of ['JackOSDrive','Applications']){ try{ const legacy=await root.getDirectoryHandle(legacyName); const target=legacyName==='Applications'?await dir.getDirectoryHandle('Applications',{create:true}):dir; await copy(legacy,target); }catch(e){} } localStorage.setItem('jackosLegacyStorageMigrated','true'); } return dir; }
+async function UserData_dir(name=currentUser){ const root=await navigator.storage.getDirectory(); const users=await root.getDirectoryHandle('Users',{create:true}); const dir=await users.getDirectoryHandle(UserData_key(name),{create:true}); if(name===Users_all()[0]?.name && !localStorage.getItem('jackosLegacyStorageMigrated')){ const copy=async(source,target)=>{ for await(const entry of source.values()){ if(entry.kind==='directory'){ const child=await target.getDirectoryHandle(entry.name,{create:true}); await copy(entry,child); } else { const file=await entry.getFile(); const writable=await (await target.getFileHandle(entry.name,{create:true})).createWritable(); await writable.write(await file.arrayBuffer());
+        await writable.close();
+      } } }; for(const legacyName of ['JackOSDrive','Applications']){ try{ const legacy=await root.getDirectoryHandle(legacyName); const target=legacyName==='Applications'?await dir.getDirectoryHandle('Applications',{create:true}):dir; await copy(legacy,target); }catch(e){} } localStorage.setItem('jackosLegacyStorageMigrated','true'); } return dir; }
 // === Apps registry (all apps) ===
 const APP_REGISTRY = {
   explorer:   { open: ()=>Explorer_open(),   close: ()=>Explorer_close?.() },
@@ -83,17 +85,8 @@ function Desktop_launch(appId){
     win &&
     DesktopMinimisedApps.has(winId)
   ){
-
-    DesktopMinimisedApps.delete(
-      winId
-    );
-
-    win.style.display='block';
-
-    win.style.zIndex =
-      ++DesktopWindows.z;
-
-    Desktop_refreshTaskbar();
+    if(typeof WindowManager!=='undefined'&&WindowManager.get(winId)) WindowManager.show(winId);
+    else { DesktopMinimisedApps.delete(winId); win.classList.remove('window-minimized'); win.style.display='block'; }
 
     return;
 
@@ -106,8 +99,8 @@ function Desktop_launch(appId){
       !== 'none'
   ){
 
-    win.style.zIndex =
-      ++DesktopWindows.z;
+    if(typeof WindowManager!=='undefined'&&WindowManager.get(winId)) WindowManager.focus(winId);
+    else win.style.zIndex=++DesktopWindows.z;
 
     return;
 
@@ -123,6 +116,7 @@ function Desktop_launch(appId){
     appId.startsWith('installed:')
   ){
 
+    Desktop_hideStartMenu();
     InstalledApps_launch(
       appId.slice(10)
     );
@@ -153,9 +147,8 @@ function Desktop_launch(appId){
   app.open();
 
   if(win){
-
-    win.style.zIndex =
-      ++DesktopWindows.z;
+    if(typeof WindowManager!=='undefined'&&WindowManager.get(winId)) WindowManager.focus(winId);
+    else win.style.zIndex=++DesktopWindows.z;
 
   }
 
@@ -171,7 +164,7 @@ function Desktop_launch(appId){
 
 // ZIP applications use the Applications directory as their registry.
 const APP_STORE_ROOTS = ['../JackOS-Server-Files/App-Store/Apps/','../JackOS-Server-Files/App-Store/Apps/'];
-const InstalledAppsState = { apps: [], byFile: new Map() };
+const InstalledAppsState = { apps: [], byFile: new Map(), windows: new Map(), windowFiles: new Map() };
 let installedAppRuntime = null;
 let InstalledAppActive = null;
 
@@ -331,148 +324,121 @@ function InstalledApps_addLaunchHandlers(icon, fileName){
   icon.addEventListener('click', ()=>Desktop_launch('installed:'+fileName));
   icon.addEventListener('contextmenu', e=>{ e.preventDefault(); InstalledApps_delete(fileName); });
 }
+
 function InstalledApps_refreshUI(){
-  document.querySelectorAll('[data-installed-app="true"]').forEach(el=>el.remove());
+  document.querySelectorAll('[data-installed-app="true"]').forEach(element=>element.remove());
   const desktop=document.querySelector('#desktop .desktop');
   const menu=document.querySelector('#startMenu .menu-section');
   InstalledAppsState.apps.forEach(app=>{
-    if(desktop){ 
-      
-      
-      const icon=document.createElement('div'); icon.className='icon'; icon.dataset.installedApp='true'; icon.append(InstalledApps_icon(app)); const label=document.createElement('div'); label.textContent=app.name; icon.append(label); InstalledApps_addLaunchHandlers(icon,app.fileName); desktop.append(icon); }
-    
-    
-  if(menu){
-
-  const item=document.createElement('div');
-  item.className='menu-item';
-  item.dataset.app='installed:'+app.fileName;
-  item.dataset.installedApp='true';
-
-  const ico=document.createElement('span');
-  ico.className='mi-ico';
-
-  const iconBox =
-    InstalledApps_icon(app);
-
-  ico.append(iconBox);
-
-  const name=document.createElement('span');
-  name.textContent=app.name;
-
-  item.append(
-    ico,
-    name
-  );
-
-  menu.append(item);
-
-}
-
-
-  
+    if(desktop){
+      const icon=document.createElement('div'); icon.className='icon'; icon.dataset.installedApp='true';
+      icon.append(InstalledApps_icon(app));
+      const label=document.createElement('div'); label.textContent=app.name; icon.append(label);
+      InstalledApps_addLaunchHandlers(icon,app.fileName); desktop.append(icon);
+    }
+    if(menu){
+      const item=document.createElement('div'); item.className='menu-item'; item.dataset.app='installed:'+app.fileName; item.dataset.installedApp='true';
+      const ico=document.createElement('span'); ico.className='mi-ico'; ico.append(InstalledApps_icon(app));
+      const name=document.createElement('span'); name.textContent=app.name; item.append(ico,name); menu.append(item);
+    }
   });
 }
+
 async function InstalledApps_getPackage(fileName){
-  const dir=await Applications_dir(); const handle=await dir.getFileHandle(fileName); return AppPackage_read(await handle.getFile());
+  const dir=await Applications_dir();
+  const handle=await dir.getFileHandle(fileName);
+  return AppPackage_read(await handle.getFile());
 }
+
+function InstalledApps_windowId(fileName){
+  return 'installedApp-'+Array.from(String(fileName)).map(char=>char.codePointAt(0).toString(16)).join('-');
+}
+
+function InstalledApps_appForWindow(id){
+  const fileName=InstalledAppsState.windowFiles.get(id);
+  return fileName?InstalledAppsState.byFile.get(fileName)||null:null;
+}
+
+function InstalledApps_removeWindow(fileName){
+  const id=InstalledApps_windowId(fileName);
+  const win=InstalledAppsState.windows.get(fileName);
+  if(win){
+    (win._assetUrls||[]).forEach(url=>URL.revokeObjectURL(url));
+    win.remove();
+  }
+  InstalledAppsState.windows.delete(fileName);
+  InstalledAppsState.windowFiles.delete(id);
+  const index=DesktopWindows.ids.indexOf(id);
+  if(index>=0) DesktopWindows.ids.splice(index,1);
+  delete DesktopWindows.names[id];
+  WindowManager.windows.delete(id);
+  DesktopMinimisedApps.delete(id);
+}
+
 function InstalledApps_delete(fileName){
-
-if(
-  Users_find(currentUser)?.guest
-){
-
-  alert(
-    'Guest accounts cannot delete applications.'
-  );
-
-  return;
-
-}
-
+  if(Users_find(currentUser)?.guest){ alert('Guest accounts cannot delete applications.'); return; }
   const app=InstalledAppsState.byFile.get(fileName); if(!app) return;
   if(!confirm(`Delete ${app.name}?\n\nThis application will be removed from JackOS.\n\nAny files or data created by this application will remain on JackOS Drive.\n\nThis application can be reinstalled later.`)) return;
-  Applications_dir().then(dir=>dir.removeEntry(fileName)).then(()=>{ localStorage.removeItem('jackosAppInstall:'+UserData_key()+':'+fileName); InstalledApps_scan(); AppStore_render(); Settings_renderApplications(); }).catch(e=>alert('Delete failed: '+e.message));
+  Applications_dir().then(dir=>dir.removeEntry(fileName)).then(()=>{
+    InstalledApps_removeWindow(fileName);
+    localStorage.removeItem('jackosAppInstall:'+UserData_key()+':'+fileName);
+    InstalledApps_scan(); AppStore_render(); Settings_renderApplications(); Desktop_refreshTaskbar();
+  }).catch(error=>alert('Delete failed: '+error.message));
 }
+
 async function InstalledApps_export(fileName){
-if(
-  Users_find(currentUser)?.guest
-){
-
-  alert(
-    'Guest accounts cannot export applications.'
-  );
-
-  return;
-
-}
-
+  if(Users_find(currentUser)?.guest){ alert('Guest accounts cannot export applications.'); return; }
   try{
-    const dir=await Applications_dir(); const handle=await dir.getFileHandle(fileName); const file=await handle.getFile();
-    await Export_files([{name:fileName,file}]);
-  }catch(e){ alert('Export failed: '+e.message); }
+    const dir=await Applications_dir();
+    const handle=await dir.getFileHandle(fileName);
+    await Export_files([{name:fileName,file:await handle.getFile()}]);
+  }catch(error){ alert('Export failed: '+error.message); }
 }
+
 async function InstalledApps_launch(fileName){
   try{
-    const pkg=await InstalledApps_getPackage(fileName); if(!pkg) throw new Error('Invalid application package');
-    
-    InstalledAppActive =
-  InstalledAppsState.byFile.get(
-    fileName
-  );
+    const app=InstalledAppsState.byFile.get(fileName);
+    const pkg=app?.pkg||await InstalledApps_getPackage(fileName);
+    if(!pkg) throw new Error('Invalid application package');
+    const id=InstalledApps_windowId(fileName);
+    let win=InstalledAppsState.windows.get(fileName);
+    if(win){ WindowManager.show(id); return; }
 
-   
-  if(!installedAppRuntime){
+    win=document.createElement('section');
+    win.id=id; win.className='installed-app-window'; win.style.display='none';
+    const header=document.createElement('div'); header.className='app-window-header';
+    const title=document.createElement('strong'); title.className='title'; title.textContent=pkg.manifest.name; header.append(title);
+    const frame=document.createElement('iframe');
+    frame.setAttribute('sandbox','allow-scripts allow-forms allow-modals allow-popups allow-same-origin');
+    frame.title=pkg.manifest.name;
+    win.append(header,frame);
+    document.querySelector('#desktop .desktop').append(win);
+    InstalledAppsState.windows.set(fileName,win); InstalledAppsState.windowFiles.set(id,fileName);
+    DesktopWindows.ids.push(id); DesktopWindows.names[id]=pkg.manifest.name;
 
-  installedAppRuntime =
-    document.createElement('div');
-
-  installedAppRuntime.id =
-    'installedAppRuntime';
-
-  installedAppRuntime.innerHTML =
-`
-<div class="app-window-header">
-  <strong id="installedAppTitle"></strong>
-</div>
-<iframe sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"></iframe>
-`;
-
-  document
-    .querySelector('#desktop .desktop')
-    .append(installedAppRuntime);
-
-  Desktop_initWindows();
-
-}
-    
-    
-    
-    
-    const frame=installedAppRuntime.querySelector('iframe'); const entryPath=AppPackage_path(pkg, pkg.manifest.entry); const files=new Map();
-    for(const key of Object.keys(pkg.zip.files)){ const item=pkg.zip.files[key]; if(!item.dir) files.set(String(key).replace(/^\/+/, ''), URL.createObjectURL(await item.async('blob'))); }
-    let html=await pkg.zip.file(entryPath)?.async('text'); if(html===undefined) throw new Error('Entry file not found: '+entryPath);
-    const resolveUrl=(value)=>{ if(!value || /^(data:|blob:|https?:|#|javascript:)/i.test(value)) return value; const base=entryPath.includes('/')?entryPath.slice(0,entryPath.lastIndexOf('/')+1):''; const parts=(base+value).split('/'); const clean=[]; parts.forEach(part=>{ if(part==='..') clean.pop(); else if(part && part!=='.') clean.push(part); }); return files.get(clean.join('/')) || value; };
+    const entryPath=AppPackage_path(pkg,pkg.manifest.entry); const files=new Map(); win._assetUrls=[];
+    for(const key of Object.keys(pkg.zip.files)){
+      const item=pkg.zip.files[key];
+      if(!item.dir){
+        const url=URL.createObjectURL(await item.async('blob'));
+        files.set(String(key).replace(/^\/+/,''),url); win._assetUrls.push(url);
+      }
+    }
+    let html=await pkg.zip.file(entryPath)?.async('text');
+    if(html===undefined){ InstalledApps_removeWindow(fileName); throw new Error('Entry file not found: '+entryPath); }
+    const resolveUrl=value=>{
+      if(!value||/^(data:|blob:|https?:|#|javascript:)/i.test(value)) return value;
+      const base=entryPath.includes('/')?entryPath.slice(0,entryPath.lastIndexOf('/')+1):'';
+      const parts=(base+value).split('/'); const clean=[];
+      parts.forEach(part=>{ if(part==='..')clean.pop(); else if(part&&part!=='.')clean.push(part); });
+      return files.get(clean.join('/'))||value;
+    };
     html=html.replace(/(src|href)=(['"])([^'"]+)\2/gi,(match,attr,quote,value)=>`${attr}=${quote}${resolveUrl(value)}${quote}`);
     html=html.replace(/url\((['"]?)([^)'" ]+)\1\)/gi,(match,quote,value)=>`url(${quote}${resolveUrl(value)}${quote})`);
-    document.getElementById('installedAppTitle').textContent=pkg.manifest.name;
-    
-   
-    frame.srcdoc = html;
-
-installedAppRuntime.style.display='block';
-
-DesktopMinimisedApps.delete(
-  'installedAppRuntime'
-);
-
-Desktop_refreshTaskbar();
-
-installedAppRuntime.style.zIndex =
-  ++DesktopWindows.z;
-
-
-  }catch(e){ alert('Unable to launch application: '+e.message); }
+    frame.srcdoc=html;
+    Desktop_initWindows();
+    WindowManager.show(id);
+  }catch(error){ alert('Unable to launch application: '+error.message); }
 }
 async function AppStore_serverZipNames() {
 
@@ -520,7 +486,7 @@ if(
 
 }
 
-  const bytes=await pkg.zip.generateAsync({type:'uint8array'}); await Applications_writeZip(name, bytes); localStorage.setItem('jackosAppInstall:'+UserData_key()+':'+name, new Date().toISOString()); await InstalledApps_scan(); AppStore_render();
+  const bytes=await pkg.zip.generateAsync({type:'uint8array'}); InstalledApps_removeWindow(name); await Applications_writeZip(name, bytes); localStorage.setItem('jackosAppInstall:'+UserData_key()+':'+name, new Date().toISOString()); await InstalledApps_scan(); AppStore_render();
 }
 async function AppStore_open(){
   const app=document.getElementById('appStoreApp'); if(!app) return;
