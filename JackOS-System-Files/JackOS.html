@@ -146,12 +146,50 @@
     <div id="musicApp">
       <div id="musicHeader"><div class="title">Music</div><div class="actions"></div></div>
       <div id="musicNotice" role="status"></div>
-      <div id="musicTabs" role="tablist"><button class="explorer-btn music-tab active" data-music-mode="home">Home</button><button class="explorer-btn ghost music-tab" data-music-mode="library">Library</button></div>
-      <label class="explorer-btn music-import" for="musicInput">Import Music</label>
-      <input id="musicInput" type="file" accept="audio/mpeg,audio/wav,audio/mp4,audio/aac,audio/flac,.mp3,.wav,.m4a,.aac,.flac" multiple style="display:none;" />
-      <div id="musicBody"><div id="musicList" aria-live="polite"></div></div>
+      <div id="musicLoadingWrap"><div id="musicLoadingBar"></div></div>
+      <div id="musicLayout">
+        <aside id="musicSidebar" aria-label="Music navigation">
+          <nav class="music-nav-group" aria-label="Main">
+            <button class="music-nav-button" data-music-page="search"><span class="music-nav-icon">🔍</span><span>Search</span></button>
+            <button class="music-nav-button active" data-music-page="home"><span class="music-nav-icon">🏠</span><span>Home</span></button>
+          </nav>
+          <div class="music-nav-divider"></div>
+          <nav class="music-nav-group" aria-label="Browse">
+            <button class="music-nav-button" data-music-page="recent"><span class="music-nav-icon">🕒</span><span>Recently Added</span></button>
+            <button class="music-nav-button" data-music-page="artists"><span class="music-nav-icon">🎤</span><span>Artists</span></button>
+            <button class="music-nav-button" data-music-page="albums"><span class="music-nav-icon">💿</span><span>Albums</span></button>
+            <button class="music-nav-button" data-music-page="songs"><span class="music-nav-icon">🎵</span><span>Songs</span></button>
+            <button class="music-nav-button" data-music-page="genres"><span class="music-nav-icon">🏷</span><span>Genres</span></button>
+          </nav>
+          <div class="music-nav-divider"></div>
+          <nav class="music-nav-group" aria-label="Playlists">
+            <button class="music-nav-button" data-music-page="playlists"><span class="music-nav-icon">📁</span><span>Playlists</span></button>
+            <div id="musicPlaylistNav"></div>
+            <button class="music-nav-button" data-music-page="favourites"><span class="music-nav-icon">❤️</span><span>Favourite Songs</span></button>
+            <button class="music-nav-button" id="musicNewPlaylist"><span class="music-nav-icon">➕</span><span>New Playlist</span></button>
+          </nav>
+          <div class="music-nav-divider"></div>
+          <nav class="music-nav-group" aria-label="Music actions">
+            <button class="music-nav-button" id="musicRefresh"><span class="music-nav-icon">🔄</span><span>Refresh Music</span></button>
+            <label class="music-nav-button music-import" for="musicInput"><span class="music-nav-icon">📥</span><span>Import Music</span></label>
+            <input id="musicInput" type="file" accept=".zip,application/zip,audio/mpeg,audio/wav,audio/mp4,audio/aac,audio/flac,.mp3,.wav,.m4a,.aac,.flac" multiple style="display:none;" />
+          </nav>
+        </aside>
+        <main id="musicBody">
+          <h1 id="musicPageTitle">Home</h1>
+          <form id="musicSearchPanel" hidden>
+            <label for="musicSearchInput">Search Music</label>
+            <div class="music-search-scope" role="group" aria-label="Search location">
+              <button type="button" class="active" data-music-search-scope="music">JackOS Music</button>
+              <button type="button" data-music-search-scope="library">Library</button>
+            </div>
+            <div class="music-search-row"><input id="musicSearchInput" type="search" placeholder="Songs, artists, albums or playlists" autocomplete="off" /><button class="explorer-btn" type="submit">Search</button></div>
+          </form>
+          <div id="musicList" aria-live="polite"></div>
+        </main>
+      </div>
       <div id="musicPlayer" class="music-player" aria-label="Music player">
-        <img id="musicPlayerArtwork" alt="Album artwork" />
+        <img id="musicPlayerArtwork" src="../JackOS-Server-Files/Music/Trans-Music.png" alt="Album artwork" />
         <div class="music-player-info"><strong id="musicPlayerTitle">Nothing playing</strong><span id="musicPlayerArtist">Select a song</span></div>
         <div class="music-player-controls"><button class="explorer-btn ghost" id="musicPrevious" title="Previous">⏮</button><button class="explorer-btn" id="musicPlayPause" title="Play or pause">▶</button><button class="explorer-btn ghost" id="musicNext" title="Next">⏭</button><input id="musicVolume" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="Volume" /></div>
         <input id="musicProgress" type="range" min="0" max="100" value="0" step="0.1" aria-label="Progress" />
