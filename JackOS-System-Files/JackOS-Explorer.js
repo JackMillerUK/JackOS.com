@@ -33,9 +33,12 @@ function Explorer_isProtectedEntry(){
     ExplorerState.files[idx];
 
   return (
-    entry &&
-    entry.name==='Applications'
-  );
+  entry &&
+  (
+    entry.name==='Applications' ||
+    entry.name==='Desktop'
+  )
+);
 
 }
 function Explorer_isApplicationsFolder(){
@@ -43,6 +46,14 @@ function Explorer_isApplicationsFolder(){
   return (
     ExplorerState.cwdPath.length === 1 &&
     ExplorerState.cwdPath[0] === 'Applications'
+  );
+
+}
+function Explorer_isDesktopFolder(){
+
+  return (
+    ExplorerState.cwdPath.length===1 &&
+    ExplorerState.cwdPath[0]==='Desktop'
   );
 
 }
@@ -115,6 +126,27 @@ function Explorer_closeContextMenu(){
     m.style.display='none';
 
 }
+document.addEventListener(
+  'mousedown',
+  e=>{
+
+    const menu =
+      document.getElementById(
+        'explorerContextMenu'
+      );
+
+    if(
+      menu &&
+      menu.style.display==='block' &&
+      !menu.contains(e.target)
+    ){
+
+      Explorer_closeContextMenu();
+
+    }
+
+  }
+);
 function Explorer_showContextMenu(
   x,
   y,
@@ -122,11 +154,15 @@ function Explorer_showContextMenu(
 ){
 
   const m =
-    document.getElementById(
-      'explorerContextMenu'
-    );
+  document.getElementById(
+    'explorerContextMenu'
+  );
 
-  m.innerHTML = html;
+  m.innerHTML =
+    html;
+
+  m.style.position =
+    'fixed';
 
   m.style.left =
     x + 'px';
@@ -137,12 +173,11 @@ function Explorer_showContextMenu(
   m.style.display =
     'block';
 
+  m.style.zIndex =
+    '999999';
+
 }
 
-document.addEventListener(
-  'click',
-  Explorer_closeContextMenu
-);
 
 function Explorer_renderList(){ const ul=document.getElementById('explorer-list'); ul.classList.toggle('multi', ExplorerState.multi); ul.innerHTML=''; ExplorerState.files.forEach((f,i)=>{ const li=document.createElement('li'); li.dataset.idx=i; const cb=document.createElement('input'); cb.type='checkbox'; cb.className='selbox'; cb.checked=ExplorerState.multiSet.has(i); cb.addEventListener('click', (e)=>{ e.stopPropagation(); Explorer_toggleItem(i); }); 
 
@@ -429,6 +464,12 @@ async function Explorer_createFile(){
     await writable.write('');
     await writable.close();
     await Explorer_listDriveCwd();
+    if(
+  ExplorerState.cwdPath[0]
+  ==='Desktop'
+){
+  await Desktop_refreshFiles();
+}
   }catch(e){ alert('Create file failed: '+e.message); }
 }
 async function Explorer_createFolder(){
@@ -439,6 +480,12 @@ async function Explorer_createFolder(){
     if(await Explorer_existsAny(ExplorerState.driveCwd,name)){ alert('An item with that name already exists.'); return; }
     await ExplorerState.driveCwd.getDirectoryHandle(name,{create:true});
     await Explorer_listDriveCwd();
+    if(
+  ExplorerState.cwdPath[0]
+  ==='Desktop'
+){
+  await Desktop_refreshFiles();
+}
   }catch(e){ alert('Create folder failed: '+e.message); }
 }
 function Explorer_virtualFile(name, path, text, type='text/plain'){ return {name, path, kind:'file', virtual:true, file:new File([text||''], name, {type})}; }
@@ -459,6 +506,12 @@ async function Explorer_listDriveCwd(){
   const arr=[];
   if(!ExplorerState.virtualPath.length){
     for await(const entry of ExplorerState.driveCwd.values()){
+if(
+  Explorer_isRecycleBin() &&
+  entry.kind==='file' &&
+  entry.name.endsWith('.restorepath')
+)
+continue;
 if(
   entry.name==='Music' ||
   entry.name==='Recycle Bin' ||
@@ -529,72 +582,43 @@ async function Explorer_emptyRecycleBin(){
 
 async function Explorer_setWallpaperSelected(){ const idx=ExplorerState.selectedIndex; if(idx<0) return; const entry=ExplorerState.files[idx]; if(!entry || entry.kind!=='file' || !(entry.file.type||'').startsWith('image/')){ alert('Select an image file.'); return; } try{ const reader=new FileReader(); reader.onload = ()=>{ Desktop_setWallpaperFromData(reader.result); Desktop_hideStartMenu(); }; reader.readAsDataURL(entry.file); }catch(e){ alert('Set background failed: '+e.message); } }
 async function Explorer_restoreSelected(){
+  try{
+    if(!Explorer_isRecycleBin()){ alert('Open Recycle Bin to restore items.'); return; }
+    const idx=ExplorerState.selectedIndex;
+    if(idx<0){ alert('Select an item first.'); return; }
+    const entry=ExplorerState.files[idx];
+    if(!entry?.handle){ alert('This recycle-bin item cannot be restored.'); return; }
 
-  const idx=
-    ExplorerState.selectedIndex;
+    let restorePath='';
+    try{
+      const meta=await ExplorerState.driveCwd.getFileHandle(entry.name+'.restorepath');
+      restorePath=(await (await meta.getFile()).text()).trim();
+    }catch(error){ /* Older deleted folders may not have a restore-path sidecar. */ }
 
-  if(idx<0)
-    return;
-
-  const entry=
-    ExplorerState.files[idx];
-
-  const metaHandle =
-    await ExplorerState.driveCwd
-      .getFileHandle(
-        entry.name+'.restorepath'
-      );
-
-  const metaFile=
-    await metaHandle.getFile();
-
-  const restorePath =
-    (
-      await metaFile.text()
-    )
-    .trim();
-
-  let target =
-    ExplorerState.driveRoot;
-
-  if(restorePath){
-
-    const parts =
-      restorePath.split('/');
-
-    for(const p of parts){
-
-      target =
-        await target
-          .getDirectoryHandle(
-            p,
-            {create:true}
-          );
-
+    let target=ExplorerState.driveRoot;
+    if(restorePath){
+      for(const part of restorePath.split('/').filter(Boolean)) target=await target.getDirectoryHandle(part,{create:true});
     }
 
-  }
+    const restoreName=await Explorer_uniqueName(target,entry.name);
+    if(entry.kind==='directory'){
+      const destination=await target.getDirectoryHandle(restoreName,{create:true});
+      await Explorer_copyDirectoryRecursive(entry.handle,destination);
+    }else{
+      await Explorer_copyFileHandleToDir(entry.handle,target,restoreName);
+    }
 
-  await Explorer_copyFileHandleToDir(
-    entry.handle,
-    target,
-    entry.name
-  );
-
-  await ExplorerState.driveCwd.removeEntry(
-    entry.name
-  );
-
-  await ExplorerState.driveCwd.removeEntry(
-    entry.name+'.restorepath'
-  );
-
-  await Explorer_listDriveCwd();
-
-  alert(
-    'Restored ✓'
-  );
-
+    await ExplorerState.driveCwd.removeEntry(entry.name,{recursive:entry.kind==='directory'});
+    try{ await ExplorerState.driveCwd.removeEntry(entry.name+'.restorepath'); }catch(error){}
+    
+    
+    await Explorer_listDriveCwd();
+    
+    await Desktop_refreshFiles();
+    
+    Explorer_clearPreview();
+    alert(restoreName===entry.name?'Restored ✓':`Restored as “${restoreName}” because an item with the original name already exists.`);
+  }catch(error){ alert('Restore failed: '+error.message); }
 }
 async function Explorer_deleteSelected(){ 
   
@@ -603,8 +627,9 @@ async function Explorer_deleteSelected(){
 ){
 
   alert(
-    'Applications folder is protected.'
-  );
+  entry.name +
+  ' folder is protected.'
+);
 
   return;
 
@@ -633,52 +658,12 @@ const recycleBin =
       {create:true}
     );
 
-if(entry.kind==='file'){
-
-  const data =
-    await entry.handle.getFile();
-
-  const restoreName =
-    entry.name +
-    '.restorepath';
-
-  const meta =
-    await recycleBin
-      .getFileHandle(
-        restoreName,
-        {create:true}
-      );
-
-  const mw=
-    await meta.createWritable();
-
-  await mw.write(
-    ExplorerState.cwdPath.join('/')
-  );
-
-  await mw.close();
-
-  await Explorer_copyFileHandleToDir(
-    entry.handle,
-    recycleBin,
-    entry.name
-  );
-
-}
+const recycledName=await Explorer_uniqueName(recycleBin,entry.name);
+await Explorer_writeRestorePath(recycleBin,recycledName,ExplorerState.cwdPath.join('/'));
+if(entry.kind==='file') await Explorer_copyFileHandleToDir(entry.handle,recycleBin,recycledName);
 else{
-
-  const restoreDir =
-    await recycleBin
-      .getDirectoryHandle(
-        entry.name,
-        {create:true}
-      );
-
-  await Explorer_copyDirectoryRecursive(
-    entry.handle,
-    restoreDir
-  );
-
+  const restoreDir=await recycleBin.getDirectoryHandle(recycledName,{create:true});
+  await Explorer_copyDirectoryRecursive(entry.handle,restoreDir);
 }
 
 await ExplorerState.driveCwd.removeEntry(
@@ -689,18 +674,44 @@ await ExplorerState.driveCwd.removeEntry(
   }
 );
 
-await Explorer_listDriveCwd(); Explorer_clearPreview(); alert('Moved to Recycle Bin ✓'); }catch(e){ alert('Delete failed: '+e.message); } }
+await Explorer_listDriveCwd();
+
+if(
+  ExplorerState.cwdPath[0]
+  ==='Desktop'
+){
+  await Desktop_refreshFiles();
+}
+ Explorer_clearPreview(); alert('Moved to Recycle Bin ✓'); }catch(e){ alert('Delete failed: '+e.message); } }
 async function Explorer_rename(){ 
   if(
   Explorer_isApplicationsFolder() ||
   Explorer_isProtectedEntry()
 ){
-  alert(
-    'Applications cannot be renamed.'
-  );
+  const entry =
+  ExplorerState.files[
+    ExplorerState.selectedIndex
+  ];
+
+alert(
+  entry.name +
+  ' cannot be renamed.'
+);
   return;
 }
-  try{ if(!ExplorerState.driveCwd){ alert('Rename only works in JackOS Drive.'); return; } const idx=ExplorerState.selectedIndex; if(idx<0){ alert('Select an item first.'); return; } const entry=ExplorerState.files[idx]; const oldName=entry.name; let newName=prompt('Rename to:', oldName); if(!newName) return; newName=newName.trim(); if(!newName || newName===oldName || newName.includes('/')||newName==='.'||newName==='..'){ return; } const existsFile=await Explorer_existsFile(ExplorerState.driveCwd,newName); const existsDir=await Explorer_existsDir(ExplorerState.driveCwd,newName); if(entry.kind==='file'){ if(existsDir){ alert('A folder with that name exists.'); return;} if(existsFile){ const ok=confirm('A file with that name exists. Overwrite it?'); if(!ok) return; } await Explorer_copyFileHandleToDir(entry.handle, ExplorerState.driveCwd, newName); await ExplorerState.driveCwd.removeEntry(oldName); } else { if(existsFile){ alert('A file with that name exists.'); return;} if(existsDir){ const ok=confirm('A folder with that name exists. Merge/overwrite?'); if(!ok) return; } const newDir=await ExplorerState.driveCwd.getDirectoryHandle(newName,{create:true}); await Explorer_copyDirectoryRecursive(entry.handle,newDir); await ExplorerState.driveCwd.removeEntry(oldName,{recursive:true}); } await Explorer_listDriveCwd(); const idx2=ExplorerState.files.findIndex(f=>f.name===newName && f.kind===entry.kind); if(idx2>=0) Explorer_setSelection(idx2); alert('Renamed ✓'); }catch(e){ alert('Rename failed: '+e.message); } }
+  try{ if(!ExplorerState.driveCwd){ alert('Rename only works in JackOS Drive.'); return; } const idx=ExplorerState.selectedIndex; if(idx<0){ alert('Select an item first.'); return; } const entry=ExplorerState.files[idx]; const oldName=entry.name; let newName=prompt('Rename to:', oldName); if(!newName) return; newName=newName.trim(); if(!newName || newName===oldName || newName.includes('/')||newName==='.'||newName==='..'){ return; } const existsFile=await Explorer_existsFile(ExplorerState.driveCwd,newName); const existsDir=await Explorer_existsDir(ExplorerState.driveCwd,newName); if(entry.kind==='file'){ if(existsDir){ alert('A folder with that name exists.'); return;} if(existsFile){ const ok=confirm('A file with that name exists. Overwrite it?'); if(!ok) return; } await Explorer_copyFileHandleToDir(entry.handle, ExplorerState.driveCwd, newName); await ExplorerState.driveCwd.removeEntry(oldName); } else { if(existsFile){ alert('A file with that name exists.'); return;} if(existsDir){ const ok=confirm('A folder with that name exists. Merge/overwrite?'); if(!ok) return; } const newDir=await ExplorerState.driveCwd.getDirectoryHandle(newName,{create:true}); await Explorer_copyDirectoryRecursive(entry.handle,newDir); await ExplorerState.driveCwd.removeEntry(oldName,{recursive:true}); }
+  
+  await Explorer_listDriveCwd(); 
+  if(
+  ExplorerState.cwdPath[0]
+  ==='Desktop'
+){
+  await Desktop_refreshFiles();
+}
+  
+  const idx2=ExplorerState.files.findIndex(f=>f.name===newName && f.kind===entry.kind); if(idx2>=0) Explorer_setSelection(idx2); alert('Renamed ✓'); }catch(e){ alert('Rename failed: '+e.message); } 
+
+}
 async function Explorer_exportSelected(){ try{ const idx=ExplorerState.selectedIndex; if(idx<0){ alert('Select a file first.'); return; } const entry=ExplorerState.files[idx]; if(entry.kind!=='file'){ alert('Export folders not supported yet.'); return; } await Export_files([entry]); }catch(e){ if(e && e.name==='AbortError') return; alert('Export failed: '+e.message); } }
 
 async function Explorer_showProperties(){
@@ -793,30 +804,12 @@ const recycleBin =
     );
 
 for(const e of entries){
-
-  if(e.kind === 'file'){
-
-    await Explorer_copyFileHandleToDir(
-      e.handle,
-      recycleBin,
-      e.name
-    );
-
-  }
+  const recycledName=await Explorer_uniqueName(recycleBin,e.name);
+  await Explorer_writeRestorePath(recycleBin,recycledName,ExplorerState.cwdPath.join('/'));
+  if(e.kind==='file') await Explorer_copyFileHandleToDir(e.handle,recycleBin,recycledName);
   else{
-
-    const restoreDir =
-      await recycleBin
-        .getDirectoryHandle(
-          e.name,
-          {create:true}
-        );
-
-    await Explorer_copyDirectoryRecursive(
-      e.handle,
-      restoreDir
-    );
-
+    const restoreDir=await recycleBin.getDirectoryHandle(recycledName,{create:true});
+    await Explorer_copyDirectoryRecursive(e.handle,restoreDir);
   }
 
   await ExplorerState.driveCwd.removeEntry(
@@ -862,8 +855,9 @@ if(
   ){
 
     alert(
-      'Installed applications cannot be moved or duplicated.'
-    );
+  DestState.sourceEntry?.name +
+  ' cannot be moved or duplicated.'
+);
 
     return;
 
@@ -881,7 +875,8 @@ async function Explorer_destList(){ const list=document.getElementById('destList
   
   if(
   entry.name === 'Music' ||
-  entry.name === 'Recycle Bin'
+  entry.name === 'Recycle Bin' ||
+  entry.name === 'Applications'
 )
 continue;
   
@@ -891,6 +886,12 @@ async function Explorer_destNewFolder(){ const name=prompt('New folder name:'); 
 async function Explorer_confirmDest(){ try{ const mode=DestState.mode; const destDir=DestState.destCwd; if(mode==='move'){ const src=DestState.sourceEntry; await Explorer_moveOne(src, destDir); } else if(mode==='duplicate'){ const src=DestState.sourceEntry; await Explorer_duplicateOne(src, destDir); } else if(mode==='move-many'){ const list=Explorer_selectedEntries(); for(const src of list){ await Explorer_moveOne(src, destDir); } Explorer_clearMulti(); } else if(mode==='duplicate-many'){ const list=Explorer_selectedEntries(); for(const src of list){ await Explorer_duplicateOne(src, destDir); } Explorer_clearMulti(); } else { const filename=document.getElementById('destName').value.trim()||'untitled.txt'; await Explorer_saveAsToDir(destDir, filename); } await Explorer_listDriveCwd(); Explorer_closeDest(); Desktop_showOverlay('Operation complete ✓'); }catch(e){ alert('Operation failed: '+e.message); } }
 async function Explorer_moveOne(src, destDir){ if(!src || !src.handle || src.virtual) return; if(src.parent===destDir) return; if(src.kind==='file'){ await Explorer_copyFileHandleToDir(src.handle, destDir, src.name); await src.parent.removeEntry(src.name); } else { const newDir=await destDir.getDirectoryHandle(src.name,{create:true}); await Explorer_copyDirectoryRecursive(src.handle, newDir); await src.parent.removeEntry(src.name, {recursive:true}); } }
 async function Explorer_duplicateOne(src, destDir){ if(!src) return; if(src.kind==='file'){ const target = await Explorer_uniqueName(destDir, src.name); await Explorer_copyFileHandleToDir(src.handle, destDir, target); } else { const targetBase = await Explorer_uniqueName(destDir, src.name.replace(/\/$/, '')); const newDir=await destDir.getDirectoryHandle(targetBase, {create:true}); await Explorer_copyDirectoryRecursive(src.handle, newDir); } }
+async function Explorer_writeRestorePath(recycleBin,name,path){
+  const handle=await recycleBin.getFileHandle(name+'.restorepath',{create:true});
+  const writable=await handle.createWritable();
+  await writable.write(path||'');
+  await writable.close();
+}
 async function Explorer_uniqueName(dir, base){ let name=base; let i=1; const dot=base.lastIndexOf('.'); const stem = dot>0? base.slice(0,dot):base; const ext = dot>0? base.slice(dot):''; while(await Explorer_existsAny(dir, name)){ name = stem + ' ('+i+')' + ext; i++; if(i>9999) break; } return name; }
 async function Explorer_existsAny(dir, name){ try{ await dir.getFileHandle(name); return true; }catch(e){} try{ await dir.getDirectoryHandle(name); return true; }catch(e){} return false; }
 async function Explorer_copyFileHandleToDir(fileHandle, destDir, targetName){ const w=await (await destDir.getFileHandle(targetName, {create:true})).createWritable(); const file=await fileHandle.getFile(); await w.write(new Uint8Array(await file.arrayBuffer())); await w.close(); }
@@ -970,3 +971,16 @@ ready(()=>{
   const input=document.getElementById('importInput'); if(input){ input.addEventListener('change', async (e)=>{ const files=[...e.target.files||[]]; if(!files.length) return; try{ if(!ExplorerState.driveCwd){ await Explorer_openJackOSDrive(); } for(const f of files){ const fh=await ExplorerState.driveCwd.getFileHandle(f.name, {create:true}); const w=await fh.createWritable(); await w.write(new Uint8Array(await f.arrayBuffer())); await w.close(); } await Explorer_listDriveCwd(); alert('Imported '+files.length+' file(s)'); }catch(err){ alert('Import failed: '+err.message); } finally { input.value=''; } }); } });
 // ===== Export helper =====
 async function Export_files(entries){ try{ const blobs = await Promise.all(entries.map(async e=> new File([await e.file.arrayBuffer()], e.name, {type: e.file.type || 'application/octet-stream'}))); if(blobs.length===1){ if('showSaveFilePicker' in window){ try{ const f=blobs[0]; const ext=(f.name.split('.').pop()||'dat'); const types=f.type?[{description:f.type, accept:{[f.type]:['.'+ext]}}]:undefined; const handle=await window.showSaveFilePicker({suggestedName:f.name, types}); const w=await handle.createWritable(); await w.write(await f.arrayBuffer()); await w.close(); Desktop_showOverlay('Exported ✓'); return; }catch(e){ if(e && e.name==='AbortError') return; } } if(navigator.canShare && navigator.canShare({files:blobs})) { try{ await navigator.share({files:blobs, title: blobs[0].name}); Desktop_showOverlay('Shared ✓'); return; }catch(e){} } const url=URL.createObjectURL(blobs[0]); const a=document.createElement('a'); a.href=url; a.download=blobs[0].name; document.body.append(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },1000); Desktop_showOverlay('Exported ✓'); return; } else { alert('Multi-file ZIP export trimmed in this build. Select one file.'); } }catch(e){ alert('Export failed: '+e.message); } }
+// Desktop Files Helper
+async function Desktop_refreshIfNeeded(){
+
+  if(
+    ExplorerState.cwdPath[0]
+    ==='Desktop'
+  ){
+
+    await Desktop_refreshFiles();
+
+  }
+
+}

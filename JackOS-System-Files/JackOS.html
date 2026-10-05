@@ -191,9 +191,22 @@
       <div id="musicPlayer" class="music-player" aria-label="Music player">
         <img id="musicPlayerArtwork" src="../JackOS-Server-Files/Music/Trans-Music.png" alt="Album artwork" />
         <div class="music-player-info"><strong id="musicPlayerTitle">Nothing playing</strong><span id="musicPlayerArtist">Select a song</span></div>
-        <div class="music-player-controls"><button class="explorer-btn ghost" id="musicPrevious" title="Previous">⏮</button><button class="explorer-btn" id="musicPlayPause" title="Play or pause">▶</button><button class="explorer-btn ghost" id="musicNext" title="Next">⏭</button><input id="musicVolume" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="Volume" /></div>
+        <div class="music-player-controls"><button class="explorer-btn ghost" id="musicPrevious" title="Previous">⏮</button><button class="explorer-btn" id="musicPlayPause" title="Play or pause">▶</button><button class="explorer-btn ghost" id="musicNext" title="Next">⏭</button><button class="explorer-btn ghost" id="musicLoop" type="button" title="Loop is off" aria-label="Loop is off" aria-pressed="false">🔁</button><button class="explorer-btn ghost" id="musicQueueButton" type="button" title="Show queue" aria-label="Show queue">☷</button><input id="musicVolume" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="Volume" /></div>
         <input id="musicProgress" type="range" min="0" max="100" value="0" step="0.1" aria-label="Progress" />
         <audio id="musicAudio" preload="metadata"></audio>
+      </div>
+      <div id="musicQueueDialog" class="music-dialog-backdrop" hidden>
+        <section class="music-dialog music-queue-dialog" role="dialog" aria-modal="true" aria-labelledby="musicQueueTitle">
+          <header><h2 id="musicQueueTitle">Playing Next</h2><button class="explorer-btn ghost" id="musicQueueClose" type="button" aria-label="Close queue">×</button></header>
+          <div id="musicQueueList" class="music-queue-list"></div>
+        </section>
+      </div>
+      <div id="musicChoiceDialog" class="music-dialog-backdrop" hidden>
+        <section class="music-dialog" role="alertdialog" aria-modal="true" aria-labelledby="musicChoiceTitle" aria-describedby="musicChoiceMessage">
+          <h2 id="musicChoiceTitle">Song is already in the queue</h2>
+          <p id="musicChoiceMessage"></p>
+          <footer><button class="explorer-btn ghost" id="musicChoiceSkip" type="button">Skip Song</button><button class="explorer-btn" id="musicChoiceAdd" type="button">Add Again</button></footer>
+        </section>
       </div>
     </div>
 
@@ -508,14 +521,7 @@ Media
 
 </div>
 
-<div
-  id="explorerContextMenu"
-  style="
-    display:none;
-    position:fixed;
-    z-index:10000;
-  "
-></div>
+
       <div id="destDialog" style="position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:70;">
         <div class="shade" onclick="Explorer_closeDest()" style="position:absolute; inset:0; background:rgba(0,0,0,0.6);"></div>
         <div class="panel" style="position:relative; width:min(560px, 92%); background:#222; border:1px solid #444; border-radius:10px; padding:12px; color:#fff; z-index:71;">
@@ -537,6 +543,7 @@ Media
 
     <!-- Browser window -->
     <div id="browserWin">
+      <div id="browserHeader" class="app-window-header"><div class="title">Browser</div></div>
       <div id="browserBar">
         <button id="browserBack" title="Back">⟵</button>
         <button id="browserFwd" title="Forward">⟶</button>
@@ -1043,6 +1050,14 @@ Media
 </div>
 
 </div>
+<div
+  id="explorerContextMenu"
+  style="
+    display:none;
+    position:fixed;
+    z-index:10000;
+  "
+></div>
 <script src="JackOSziplogic.js"></script>
 <script src="JackOS-WindowManager.js"></script>
 <script src="JackOS.js"></script>

@@ -26,7 +26,17 @@ function UserData_key(name=currentUser){ return encodeURIComponent(String(name||
 function UserData_resetRuntime(){ try{ ExplorerState.driveRoot=null; ExplorerState.driveCwd=null; ExplorerState.cwdPath=[]; ExplorerState.virtualPath=[]; }catch(e){} InstalledApps_scan?.(); }
 async function UserData_dir(name=currentUser){ const root=await navigator.storage.getDirectory(); const users=await root.getDirectoryHandle('Users',{create:true}); const dir=await users.getDirectoryHandle(UserData_key(name),{create:true}); if(name===Users_all()[0]?.name && !localStorage.getItem('jackosLegacyStorageMigrated')){ const copy=async(source,target)=>{ for await(const entry of source.values()){ if(entry.kind==='directory'){ const child=await target.getDirectoryHandle(entry.name,{create:true}); await copy(entry,child); } else { const file=await entry.getFile(); const writable=await (await target.getFileHandle(entry.name,{create:true})).createWritable(); await writable.write(await file.arrayBuffer());
         await writable.close();
-      } } }; for(const legacyName of ['JackOSDrive','Applications']){ try{ const legacy=await root.getDirectoryHandle(legacyName); const target=legacyName==='Applications'?await dir.getDirectoryHandle('Applications',{create:true}):dir; await copy(legacy,target); }catch(e){} } localStorage.setItem('jackosLegacyStorageMigrated','true'); } return dir; }
+      } } }; for(const legacyName of ['JackOSDrive','Applications']){ try{ const legacy=await root.getDirectoryHandle(legacyName); const target=legacyName==='Applications'?await dir.getDirectoryHandle('Applications',{create:true}):dir; await copy(legacy,target); }catch(e){} } localStorage.setItem('jackosLegacyStorageMigrated','true'); } 
+    
+      await dir.getDirectoryHandle(
+  'Desktop',
+  {create:true}
+);
+      
+      return dir;
+    
+    
+    }
 // === Apps registry (all apps) ===
 const APP_REGISTRY = {
   explorer:   { open: ()=>Explorer_open(),   close: ()=>Explorer_close?.() },
@@ -529,16 +539,36 @@ function AppStore_render(state){
     if(!app){ AppStoreState.detail=null; } else {
       const back=document.createElement('button'); back.className='explorer-btn ghost'; back.textContent='Back to Installed Apps'; back.onclick=AppStore_backToInstalledApps; body.append(back);
       const title=document.createElement('h4'); title.textContent=app.name; body.append(title);
-      const details=document.createElement('p'); details.className='app-store-detail-text'; details.textContent=`Developer: ${app.author||'Unknown developer'}\nVersion: ${app.version||'Unknown version'}\nDescription: ${app.description||'No description.'}`; body.append(details);
+      const details=document.createElement('p'); details.className='app-store-detail-text'; 
+      
+      details.textContent=
+`Developer: ${app.author||'Unknown developer'}
+Version: ${app.version||'Unknown version'}
+Category: ${app.category||'other'}
+Description: ${app.description||'No description.'}`;
+      body.append(details);
       const actions=document.createElement('div'); actions.className='app-store-card-actions app-store-detail-actions';
-      const check=document.createElement('button'); check.className='explorer-btn'; check.textContent='More'; check.onclick=()=>
-  AppStore_showInstalledDetail(
+      
+      const check=document.createElement('button');
+
+check.className='explorer-btn';
+
+check.textContent='Check For Updates';
+
+check.onclick=()=>
+  AppStore_checkAppUpdates(
     app.fileName
   );
-      const latest=AppStoreState.catalogue.find(item=>item.fileName===app.fileName);
-      const update=document.createElement('button'); update.className='explorer-btn'; update.textContent='Update'; update.disabled=!latest||latest.version===app.version; update.onclick=()=>AppStore_installPackage(app.fileName,latest.pkg);
       const remove=document.createElement('button'); remove.className='explorer-btn danger'; remove.textContent='Delete'; remove.onclick=()=>InstalledApps_delete(app.fileName);
-      actions.append(check,update,remove); body.append(actions); return;
+     
+     
+      actions.append(
+  check,
+  remove
+);
+      body.append(actions); return;
+    
+    
     }
   }
   if(AppStoreState.view==='settings'){
@@ -635,40 +665,92 @@ function AppStore_showCategory(
 
 function AppStore_showInstalledDetail(fileName){ AppStoreState.view='settings'; AppStoreState.detail=fileName; AppStore_render(); }
 function AppStore_backToInstalledApps(){ AppStoreState.detail=null; AppStore_render(); }
-async function AppStore_checkAppUpdates(fileName){
+async function AppStore_checkAppUpdates(
+  fileName
+){
+
   try{
-    const latest=await AppStore_serverPackages();
-    AppStoreState.catalogue=latest;
-    const installed=InstalledAppsState.byFile.get(fileName);
-    const available=latest.find(app=>app.fileName===fileName);
-    AppStoreState.view='settings';
-    AppStoreState.detail=fileName;
-    AppStore_render();
-    AppStoreState.updateStatus =
 
-!installed || !available
+    const latest =
+      await AppStore_serverPackages();
 
-? 'Unavailable'
+    const installed =
+      InstalledAppsState.byFile.get(
+        fileName
+      );
 
-:
+    const available =
+      latest.find(
+        app =>
+          app.fileName===fileName
+      );
 
-available.version!==installed.version
+    if(
+      !installed ||
+      !available
+    ){
 
-? '⬆ Update Available'
+      alert(
+        'This application is no longer available in the JackOS App Store.'
+      );
 
-: '✅ Up To Date';
-    
+      return;
 
-if(!installed || !available){
+    }
 
-  AppStoreState.updateStatus =
-    'Unavailable';
+    if(
+      available.version===
+      installed.version
+    ){
 
-  return;
+      alert(
+        'No updates available.'
+      );
 
-}
+      return;
 
-    }catch(e){ alert('Cannot check for updates. This application does not currently exist in the JackOS App Store.'); }
+    }
+
+    const doUpdate =
+      confirm(
+
+`Update Available
+
+Would You Like To Update
+
+${installed.name}
+
+from version ${installed.version}
+
+to version ${available.version}?`
+
+      );
+
+    if(
+      doUpdate
+    ){
+
+      await AppStore_installPackage(
+        fileName,
+        available.pkg
+      );
+
+      alert(
+        'Application updated ✓'
+      );
+
+    }
+
+  }
+
+  catch(e){
+
+    alert(
+      'Unable to check for updates.'
+    );
+
+  }
+
 }
 async function AppStore_checkUpdates(){
   try{

@@ -3,8 +3,19 @@
 
 const SCREENS=['startup','setup','login','transition','desktop'];
 function show(id, fade=false){ const target=document.getElementById(id); if(!target) return; if(fade){ const f=document.getElementById('fadeOverlay'); f.classList.add('show'); setTimeout(()=>{ SCREENS.forEach(s=>{const el=document.getElementById(s); if(el) el.classList.remove('active');}); target.classList.add('active'); setTimeout(()=>f.classList.remove('show'), 250); },220); } else { SCREENS.forEach(s=>{const el=document.getElementById(s); if(el) el.classList.remove('active');}); target.classList.add('active'); }
-  if(id==='desktop'){ applySavedWallpaper(); Desktop_UpdateEditionFeatures(); }
-  if(id==='login'){ Login_resetFields(); Login_applyUser(); applyLoginWallpaper(); }
+  
+
+if(id==='desktop'){
+
+  applySavedWallpaper();
+
+  Desktop_UpdateEditionFeatures();
+
+  Desktop_refreshFiles();
+
+}
+
+if(id==='login'){ Login_resetFields(); Login_applyUser(); applyLoginWallpaper(); }
   if(id==='setup'){ Setup_open(); applyWallpaperTo('setup', localStorage.getItem('jackosWallpaperData') || localStorage.getItem('jackosWallpaper') || '#000'); }
   if(id==='transition'){ applyWallpaperTo('transition', localStorage.getItem('jackosWallpaperData') || localStorage.getItem('jackosWallpaper') || '#000'); }
 }
@@ -334,8 +345,19 @@ function Login_applyUser(){ const cu=document.getElementById('current-user'); if
 function Login_switchUser(u){ currentUser=u; localStorage.setItem('jackosLastUser', currentUser); Login_applyUser(); const m=document.getElementById('message'); if(m) m.textContent=''; const p=document.getElementById('password'); if(p){ p.value=''; try{ p.focus(); }catch(e){} } }
 function Login_resetFields(){ const p=document.getElementById('password'); const m=document.getElementById('message'); if(p) p.value=''; if(m){ m.textContent=''; m.style.color=''; } }
 function Login_guest(){ const guest=Users_guest(); if(!guest) return; currentUser=guest.name; localStorage.setItem('jackosLastUser', currentUser); Login_enterDesktop(); }
-function Login_enterDesktop(){ UserData_resetRuntime(); const title=document.getElementById('transTitle'); if(title) title.textContent = 'Welcome '+currentUser; show('transition', true); setTimeout(()=>{ show('desktop', true); Desktop_UpdateEditionFeatures(); }, 1400); }
-function Login_login(){ const pwd=(document.getElementById('password')?.value)||''; const msg=document.getElementById('message'); const user=Users_find(currentUser);
+function Login_enterDesktop(){ UserData_resetRuntime(); const title=document.getElementById('transTitle'); if(title) title.textContent = 'Welcome '+currentUser; show('transition', true); 
+  
+setTimeout(()=>{
+
+  show('desktop', true);
+
+  Desktop_UpdateEditionFeatures();
+
+},1400);
+}
+
+
+  function Login_login(){ const pwd=(document.getElementById('password')?.value)||''; const msg=document.getElementById('message'); const user=Users_find(currentUser);
   if(!user){ if(msg){ msg.style.color='salmon'; msg.textContent='No accounts yet -- run setup'; } show('setup', true); return; }
   if(user.guest && pwd===''){ Login_enterDesktop(); } else if(pwd && user.pass===pwd){ Login_enterDesktop(); } else { if(msg){ msg.style.color='salmon'; msg.textContent='Incorrect password'; } } }
 ready(()=>{ const pw=document.getElementById('password'); if(pw){ pw.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); Login_login(); } }); } });
@@ -784,4 +806,326 @@ function Setup_finish(){
   SetupSecQState.accountIndex = 0;
   SetupSecQState.accountNames = SetupState.list.filter(u=>!u.guest).map(u => u.name);
   Setup_promptSecurityQuestions();
+}
+
+//Helpers To Help With Desktop Folders And Files To Appear On Wallpaper/Desktop
+
+async function Desktop_dir(){
+
+  const user =
+    await UserData_dir();
+
+  return user.getDirectoryHandle(
+    'Desktop',
+    {create:true}
+  );
+
+}
+const DesktopState={
+
+  selectedEntry:null
+
+};
+async function Desktop_refreshFiles(){
+
+  const desktop =
+    document.querySelector(
+      '#desktop .desktop'
+    );
+
+  if(!desktop)
+    return;
+
+  desktop
+  .querySelectorAll(
+    '.desktop-file-icon'
+  )
+    .forEach(
+      e=>e.remove()
+    );
+
+  const dir =
+    await Desktop_dir();
+
+  for await(
+    const entry of dir.values()
+  ){
+
+    const icon =
+      document.createElement('div');
+
+    icon.className=
+  'icon desktop-file-icon';
+
+    icon.dataset.userFile='true';
+
+    icon.innerHTML=`
+
+<div class="icon-box">
+${entry.kind==='directory'
+  ? '📁'
+  : '📄'}
+</div>
+
+<div>
+${entry.name}
+</div>
+
+`;
+
+    icon.addEventListener(
+      'dblclick',
+      ()=>Desktop_openFileEntry(
+        entry
+      )
+    );
+    
+icon.addEventListener(
+  'contextmenu',
+  e=>{
+
+    e.preventDefault();
+e.stopPropagation();
+
+    DesktopState.selectedEntry=
+  entry;
+
+Explorer_showContextMenu(
+
+  e.pageX,
+
+  e.pageY,
+
+  `
+
+<div class="context-item"
+onclick="
+Desktop_openSelected()
+">
+📂 Open
+</div>
+
+<div class="context-item"
+onclick="
+Desktop_renameSelected()
+">
+✏ Rename
+</div>
+
+<div class="context-item"
+onclick="
+Desktop_moveSelected()
+">
+📂 Move
+</div>
+
+<div class="context-item"
+onclick="
+Desktop_duplicateSelected()
+">
+📋 Duplicate
+</div>
+
+<div class="context-item"
+onclick="
+Desktop_deleteSelected()
+">
+🗑 Delete
+</div>
+
+<div class="context-item"
+onclick="
+Desktop_propertiesSelected()
+">
+ℹ Properties
+</div>
+
+`
+
+);
+
+  }
+);
+    
+
+    desktop.append(icon);
+
+  }
+
+}
+
+async function Desktop_openFileEntry(
+  entry
+){
+
+  Explorer_open();
+
+  await Explorer_openJackOSDrive();
+
+  const desktop =
+    await ExplorerState.driveRoot
+      .getDirectoryHandle(
+        'Desktop'
+      );
+
+  ExplorerState.driveCwd =
+    desktop;
+
+  ExplorerState.cwdPath =
+    ['Desktop'];
+
+  await Explorer_listDriveCwd();
+
+  const idx =
+    ExplorerState.files.findIndex(
+      f=>f.name===entry.name
+    );
+
+  if(idx>=0){
+
+  Explorer_setSelection(
+    idx
+  );
+
+  if(
+    ExplorerState.files[idx]
+      .kind==='directory'
+  ){
+
+    await Explorer_enterFolder(
+      idx
+    );
+
+  }
+  else{
+
+    Explorer_showEntry(
+      ExplorerState.files[idx]
+    );
+
+  }
+
+}
+
+}
+function Desktop_openSelected(){
+
+  if(
+    !DesktopState.selectedEntry
+  )
+    return;
+
+  Desktop_openFileEntry(
+    DesktopState.selectedEntry
+  );
+
+}
+async function Desktop_selectInExplorer(){
+
+  if(!DesktopState.selectedEntry)
+    return false;
+
+  await Explorer_openJackOSDrive();
+
+  const desktop =
+    await ExplorerState.driveRoot
+      .getDirectoryHandle(
+        'Desktop'
+      );
+
+  ExplorerState.driveCwd =
+    desktop;
+
+  ExplorerState.cwdPath =
+    ['Desktop'];
+
+  await Explorer_listDriveCwd();
+
+  const idx =
+    ExplorerState.files.findIndex(
+      f =>
+        f.name===
+        DesktopState.selectedEntry.name
+    );
+
+  if(idx<0)
+    return false;
+
+  Explorer_setSelection(idx);
+
+  return true;
+
+}
+
+async function Desktop_renameSelected(){
+
+  Explorer_open();
+
+  if(
+    await Desktop_selectInExplorer()
+  ){
+
+    await Explorer_rename();
+
+    await Desktop_refreshFiles();
+
+  }
+
+}
+
+async function Desktop_moveSelected(){
+
+  Explorer_closeContextMenu();
+
+  if(
+    await Desktop_selectInExplorer()
+  ){
+
+    Explorer_openDestDialog(
+      'move'
+    );
+
+  }
+
+}
+async function Desktop_duplicateSelected(){
+
+  Explorer_closeContextMenu();
+
+  if(
+    await Desktop_selectInExplorer()
+  ){
+
+    Explorer_openDestDialog(
+      'duplicate'
+    );
+
+  }
+
+}
+async function Desktop_deleteSelected(){
+
+  Explorer_closeContextMenu();
+
+  if(
+    await Desktop_selectInExplorer()
+  ){
+
+    await Explorer_deleteSelected();
+
+  }
+
+}
+async function Desktop_propertiesSelected(){
+
+  Explorer_closeContextMenu();
+
+  if(
+    await Desktop_selectInExplorer()
+  ){
+
+    Explorer_showProperties();
+
+  }
+
 }
