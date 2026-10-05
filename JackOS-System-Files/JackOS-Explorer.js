@@ -21,7 +21,23 @@ function Explorer_close(){
 }
 
 // Applications Folder Read Only Helper //
+function Explorer_isProtectedEntry(){
 
+  const idx =
+    ExplorerState.selectedIndex;
+
+  if(idx<0)
+    return false;
+
+  const entry =
+    ExplorerState.files[idx];
+
+  return (
+    entry &&
+    entry.name==='Applications'
+  );
+
+}
 function Explorer_isApplicationsFolder(){
 
   return (
@@ -160,6 +176,11 @@ console.log('RIGHT CLICK DETECTED');
 Explorer_isRecycleBin()
 
 ? `
+
+<div class="context-item"
+onclick="Explorer_restoreSelected()">
+♻ Restore
+</div>
 
 <div class="context-item"
 onclick="Explorer_deletePermanent()">
@@ -507,9 +528,87 @@ async function Explorer_emptyRecycleBin(){
 }
 
 async function Explorer_setWallpaperSelected(){ const idx=ExplorerState.selectedIndex; if(idx<0) return; const entry=ExplorerState.files[idx]; if(!entry || entry.kind!=='file' || !(entry.file.type||'').startsWith('image/')){ alert('Select an image file.'); return; } try{ const reader=new FileReader(); reader.onload = ()=>{ Desktop_setWallpaperFromData(reader.result); Desktop_hideStartMenu(); }; reader.readAsDataURL(entry.file); }catch(e){ alert('Set background failed: '+e.message); } }
+async function Explorer_restoreSelected(){
+
+  const idx=
+    ExplorerState.selectedIndex;
+
+  if(idx<0)
+    return;
+
+  const entry=
+    ExplorerState.files[idx];
+
+  const metaHandle =
+    await ExplorerState.driveCwd
+      .getFileHandle(
+        entry.name+'.restorepath'
+      );
+
+  const metaFile=
+    await metaHandle.getFile();
+
+  const restorePath =
+    (
+      await metaFile.text()
+    )
+    .trim();
+
+  let target =
+    ExplorerState.driveRoot;
+
+  if(restorePath){
+
+    const parts =
+      restorePath.split('/');
+
+    for(const p of parts){
+
+      target =
+        await target
+          .getDirectoryHandle(
+            p,
+            {create:true}
+          );
+
+    }
+
+  }
+
+  await Explorer_copyFileHandleToDir(
+    entry.handle,
+    target,
+    entry.name
+  );
+
+  await ExplorerState.driveCwd.removeEntry(
+    entry.name
+  );
+
+  await ExplorerState.driveCwd.removeEntry(
+    entry.name+'.restorepath'
+  );
+
+  await Explorer_listDriveCwd();
+
+  alert(
+    'Restored ✓'
+  );
+
+}
 async function Explorer_deleteSelected(){ 
   
-  try{ if(!ExplorerState.driveCwd){ alert('Delete is only in JackOS Drive.'); return; } const idx=ExplorerState.selectedIndex; if(idx<0){ alert('Select an item first.'); return; } const entry=ExplorerState.files[idx];
+  try{ if(!ExplorerState.driveCwd){ alert('Delete is only in JackOS Drive.'); return; } const idx=ExplorerState.selectedIndex; if(idx<0){ alert('Select an item first.'); return; } const entry=ExplorerState.files[idx];if(
+  Explorer_isProtectedEntry()
+){
+
+  alert(
+    'Applications folder is protected.'
+  );
+
+  return;
+
+}
 
 if(
   Explorer_isRecycleBin()
@@ -535,6 +634,29 @@ const recycleBin =
     );
 
 if(entry.kind==='file'){
+
+  const data =
+    await entry.handle.getFile();
+
+  const restoreName =
+    entry.name +
+    '.restorepath';
+
+  const meta =
+    await recycleBin
+      .getFileHandle(
+        restoreName,
+        {create:true}
+      );
+
+  const mw=
+    await meta.createWritable();
+
+  await mw.write(
+    ExplorerState.cwdPath.join('/')
+  );
+
+  await mw.close();
 
   await Explorer_copyFileHandleToDir(
     entry.handle,
@@ -570,7 +692,8 @@ await ExplorerState.driveCwd.removeEntry(
 await Explorer_listDriveCwd(); Explorer_clearPreview(); alert('Moved to Recycle Bin ✓'); }catch(e){ alert('Delete failed: '+e.message); } }
 async function Explorer_rename(){ 
   if(
-  Explorer_isApplicationsFolder()
+  Explorer_isApplicationsFolder() ||
+  Explorer_isProtectedEntry()
 ){
   alert(
     'Applications cannot be renamed.'
@@ -629,6 +752,12 @@ async function Explorer_deletePermanent(){
 
   if(idx<0)
     return;
+  const ok = confirm(
+  'Permanently delete this item?'
+);
+
+if(!ok)
+  return;
 
   const entry =
     ExplorerState.files[idx];
@@ -723,7 +852,8 @@ DestState.sourceEntry = (
 (idx>=0? ExplorerState.files[idx] : null) : null; 
 
 if(
-  Explorer_isApplicationsFolder()
+  Explorer_isApplicationsFolder() ||
+  Explorer_isProtectedEntry()
 ){
 
   if(
@@ -749,8 +879,11 @@ function Explorer_destRenderBreadcrumb(){ const bc=document.getElementById('dest
 async function Explorer_destCrumb(i){ if(i===0){ DestState.destCwd=DestState.destRoot; DestState.destPath=[]; } else { let d=DestState.destRoot; for(let k=1;k<=i;k++){ d=await d.getDirectoryHandle(DestState.destPath[k-1]); } DestState.destCwd=d; DestState.destPath=DestState.destPath.slice(0,i); } await Explorer_destList(); Explorer_destRenderBreadcrumb(); }
 async function Explorer_destList(){ const list=document.getElementById('destList'); list.innerHTML=''; for await(const entry of DestState.destCwd.values()){
   
-  if(entry.name === 'Music')
-  continue;
+  if(
+  entry.name === 'Music' ||
+  entry.name === 'Recycle Bin'
+)
+continue;
   
   
   if(entry.kind==='directory'){ const row=document.createElement('div'); row.textContent = entry.name + '/'; row.onclick = async()=>{ DestState.destCwd = entry; DestState.destPath.push(entry.name); await Explorer_destList(); Explorer_destRenderBreadcrumb(); }; list.appendChild(row); } } }

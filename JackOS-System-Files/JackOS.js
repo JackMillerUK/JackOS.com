@@ -1,5 +1,5 @@
 //JackOS.js
-// JackOS Core JS (v5 Beta 3 19th September 2026 Release)
+// JackOS Core JS (v5 Beta 3 4th October 2026 Release)
 
 
 
@@ -531,7 +531,10 @@ function AppStore_render(state){
       const title=document.createElement('h4'); title.textContent=app.name; body.append(title);
       const details=document.createElement('p'); details.className='app-store-detail-text'; details.textContent=`Developer: ${app.author||'Unknown developer'}\nVersion: ${app.version||'Unknown version'}\nDescription: ${app.description||'No description.'}`; body.append(details);
       const actions=document.createElement('div'); actions.className='app-store-card-actions app-store-detail-actions';
-      const check=document.createElement('button'); check.className='explorer-btn'; check.textContent='Check For Updates'; check.onclick=()=>AppStore_checkAppUpdates(app.fileName);
+      const check=document.createElement('button'); check.className='explorer-btn'; check.textContent='More'; check.onclick=()=>
+  AppStore_showInstalledDetail(
+    app.fileName
+  );
       const latest=AppStoreState.catalogue.find(item=>item.fileName===app.fileName);
       const update=document.createElement('button'); update.className='explorer-btn'; update.textContent='Update'; update.disabled=!latest||latest.version===app.version; update.onclick=()=>AppStore_installPackage(app.fileName,latest.pkg);
       const remove=document.createElement('button'); remove.className='explorer-btn danger'; remove.textContent='Delete'; remove.onclick=()=>InstalledApps_delete(app.fileName);
@@ -567,23 +570,30 @@ if(
   list.forEach(app=>{ const card=document.createElement('article'); card.className='app-store-card'; const icon=document.createElement('div'); icon.className='app-store-icon'; icon.textContent='📦'; const iconPath=app.pkg?.manifest?.icon && AppPackage_path(app.pkg, app.pkg.manifest.icon); if(iconPath && app.pkg.zip.file(iconPath)){ app.pkg.zip.file(iconPath).async('blob').then(blob=>{ icon.textContent=''; icon.style.backgroundImage=`url('${URL.createObjectURL(blob)}')`; }); } const content=document.createElement('div'); content.className='app-store-card-content'; const title=document.createElement('h4'); title.textContent=app.name; const details=document.createElement('p');
   
   
-details.textContent =
-  `Developer: ${
-    app.author ||
-    'Unknown developer'
-  } • Version: ${
-    app.version ||
-    'Unknown version'
-  } • Category: ${
-    app.category ||
-    'other'
-  } • ${
-    app.description ||
-    'No description.'
-  }`;
+details.textContent=
+`Developer: ${app.author||'Unknown developer'}
+Version: ${app.version||'Unknown version'}
+Status: ${AppStoreState.updateStatus||'Unknown'}
+Description: ${app.description||'No description.'}`;
   
-  content.append(title,details); if(AppStoreState.view==='settings'){ content.onclick=()=>AppStore_showInstalledDetail(app.fileName); content.title='Open app details'; } card.append(icon,content); const actions=document.createElement('div'); actions.className='app-store-card-actions'; if(AppStoreState.view==='settings'){ const check=document.createElement('button'); check.className='explorer-btn ghost'; check.textContent='Check For Updates'; check.onclick=()=>AppStore_checkAppUpdates(app.fileName); const latest=AppStoreState.catalogue.find(item=>item.fileName===app.fileName); const update=document.createElement('button'); update.className='explorer-btn'; update.textContent='Update'; update.disabled=!latest||latest.version===app.version; update.onclick=()=>AppStore_installPackage(app.fileName,latest.pkg); const remove=document.createElement('button'); remove.className='explorer-btn danger'; remove.textContent='Delete'; remove.onclick=()=>InstalledApps_delete(app.fileName); actions.append(check,update,remove); } else { const installed=InstalledAppsState.byFile.get(app.fileName); const button=document.createElement('button'); button.className='explorer-btn'; button.textContent=installed?(installed.version!==app.version?'Update':'Installed'):'Install'; button.disabled=!!installed && installed.version===app.version; button.onclick=()=>AppStore_installPackage(app.fileName,app.pkg); actions.append(button); } card.append(actions); body.append(card); });
-}
+  content.append(title,details); if(AppStoreState.view==='settings'){ content.onclick=()=>AppStore_showInstalledDetail(app.fileName); content.title='Open app details'; } card.append(icon,content); const actions=document.createElement('div'); actions.className='app-store-card-actions'; if(AppStoreState.view==='settings'){ const check=document.createElement('button'); check.className='explorer-btn ghost'; check.textContent='More';
+    
+    check.onclick=()=>
+  AppStore_showInstalledDetail(
+    app.fileName
+  ); 
+    
+    
+    
+        
+        const remove=document.createElement('button'); remove.className='explorer-btn danger'; remove.textContent='Delete'; remove.onclick=()=>InstalledApps_delete(app.fileName); actions.append(
+  check,
+  remove
+); } else { const installed=InstalledAppsState.byFile.get(app.fileName); const button=document.createElement('button'); button.className='explorer-btn'; button.textContent=installed?(installed.version!==app.version?'Update':'Installed'):'Install'; button.disabled=!!installed && installed.version===app.version; button.onclick=()=>AppStore_installPackage(app.fileName,app.pkg); actions.append(button); } card.append(actions); body.append(card); });
+
+
+
+    }
 function AppStore_showSettings(){
 
   AppStoreState.view='settings';
@@ -634,9 +644,31 @@ async function AppStore_checkAppUpdates(fileName){
     AppStoreState.view='settings';
     AppStoreState.detail=fileName;
     AppStore_render();
-    if(!installed || !available){ alert('This application is no longer available in the JackOS App Store.'); return; }
-    alert(available.version!==installed.version ? `${installed.name} update available: ${available.version}` : `${installed.name} is up to date.`);
-  }catch(e){ alert('Cannot check for updates. This application does not currently exist in the JackOS App Store.'); }
+    AppStoreState.updateStatus =
+
+!installed || !available
+
+? 'Unavailable'
+
+:
+
+available.version!==installed.version
+
+? '⬆ Update Available'
+
+: '✅ Up To Date';
+    
+
+if(!installed || !available){
+
+  AppStoreState.updateStatus =
+    'Unavailable';
+
+  return;
+
+}
+
+    }catch(e){ alert('Cannot check for updates. This application does not currently exist in the JackOS App Store.'); }
 }
 async function AppStore_checkUpdates(){
   try{
