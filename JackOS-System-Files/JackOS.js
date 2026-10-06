@@ -341,7 +341,71 @@ function InstalledApps_refreshUI(){
   const menu=document.querySelector('#startMenu .menu-section');
   InstalledAppsState.apps.forEach(app=>{
     if(desktop){
-      const icon=document.createElement('div'); icon.className='icon'; icon.dataset.installedApp='true';
+      const icon=document.createElement('div');
+      icon.style.position='absolute';
+
+const id =
+  'installed:'+
+  app.fileName;
+
+const saved =
+  Desktop_getLayout(id);
+
+let slot;
+
+if(
+  saved?.slot
+){
+  slot=saved.slot;
+}
+else{
+
+  slot=
+    Desktop_findFreeSlot();
+
+  Desktop_saveLayout(
+    id,
+    {slot}
+  );
+
+}
+
+const pos=
+  Desktop_slotToPosition(
+    slot
+  );
+
+icon.style.left=
+  pos.left+'px';
+
+icon.style.top=
+  pos.top+'px';
+
+icon.addEventListener(
+  'mousedown',
+  e=>{
+
+    if(e.button!==0)
+      return;
+
+    DesktopState.draggingIcon=
+      icon;
+
+    DesktopState.dragId=
+      id;
+
+    const rect=
+      icon.getBoundingClientRect();
+
+    DesktopState.dragOffsetX=
+      e.clientX-rect.left;
+
+    DesktopState.dragOffsetY=
+      e.clientY-rect.top;
+
+  }
+);
+      icon.className='icon'; icon.dataset.installedApp='true';
       icon.append(InstalledApps_icon(app));
       const label=document.createElement('div'); label.textContent=app.name; icon.append(label);
       InstalledApps_addLaunchHandlers(icon,app.fileName); desktop.append(icon);

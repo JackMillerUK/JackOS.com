@@ -781,7 +781,116 @@ function Desktop_initWindows(){
     WindowManager.attach({id,title:Desktop_appName(id),element:win});
   });
 }
-ready(()=>{ Desktop_initWindows(); const search=document.getElementById('taskbarSearch'); search?.addEventListener('input',()=>Desktop_searchApps(search.value)); const desktop=document.querySelector('#desktop .desktop'); desktop?.addEventListener('click',()=>setTimeout(Desktop_refreshTaskbar,0)); 
+ready(()=>{
+  Desktop_initWindows();
+
+  const hidden =
+  Desktop_hiddenApps();
+
+document
+  .querySelectorAll(
+    '#desktop .icon[data-app]'
+  )
+  .forEach(icon=>{
+
+    if(
+      hidden[
+        icon.dataset.app
+      ]
+    ){
+      icon.style.display='none';
+    }
+
+    icon.style.position='absolute';
+
+    const id=
+      'app:'+
+      icon.dataset.app;
+
+    const saved=
+      Desktop_getLayout(id);
+
+    let slot;
+
+    if(saved?.slot){
+
+      slot=saved.slot;
+
+    }else{
+
+      slot=
+        Desktop_findFreeSlot();
+
+      Desktop_saveLayout(
+        id,
+        {slot}
+      );
+
+    }
+
+    const pos=
+      Desktop_slotToPosition(
+        slot
+      );
+
+    icon.style.left=
+      pos.left+'px';
+
+    icon.style.top=
+      pos.top+'px';
+
+    icon.style.cursor='pointer';
+
+    icon.addEventListener(
+      'mousedown',
+      e=>{
+
+        if(e.button!==0)
+          return;
+
+        DesktopState.draggingIcon=
+          icon;
+
+        DesktopState.dragId=
+          id;
+
+        const rect=
+          icon.getBoundingClientRect();
+
+        DesktopState.dragOffsetX=
+          e.clientX-
+          rect.left;
+
+        DesktopState.dragOffsetY=
+          e.clientY-
+          rect.top;
+
+      }
+    );
+
+  });
+
+  const search=document.getElementById('taskbarSearch');
+
+  search?.addEventListener(
+    'input',
+    ()=>Desktop_searchApps(
+      search.value
+    )
+  );
+
+  const desktop=document.querySelector(
+    '#desktop .desktop'
+  );
+
+  desktop?.addEventListener(
+    'click',
+    ()=>setTimeout(
+      Desktop_refreshTaskbar,
+      0
+    )
+  );
+
 });
 // ===== Setup (first account admin) =====
 const SetupState = { list: [] };
@@ -821,11 +930,266 @@ async function Desktop_dir(){
   );
 
 }
+function Desktop_layout(){
+
+  return JSON.parse(
+    localStorage.getItem(
+      'jackosDesktopLayout'
+    ) || '{}'
+  );
+
+}
+
+function Desktop_saveLayout(
+  id,
+  data
+){
+
+  const layout =
+    Desktop_layout();
+
+  layout[id] = {
+    ...(layout[id]||{}),
+    ...data
+  };
+
+  localStorage.setItem(
+    'jackosDesktopLayout',
+    JSON.stringify(layout)
+  );
+
+}
+
+function Desktop_getLayout(
+  id
+){
+
+  return Desktop_layout()[id];
+
+}
+
+function Desktop_hiddenApps(){
+
+  return JSON.parse(
+    localStorage.getItem(
+      'jackosHiddenApps'
+    ) || '{}'
+  );
+
+}
+
+function Desktop_hideApp(
+  app
+){
+
+  const hidden =
+    Desktop_hiddenApps();
+
+  hidden[app] = true;
+
+  localStorage.setItem(
+    'jackosHiddenApps',
+    JSON.stringify(hidden)
+  );
+
+  const icon =
+    document.querySelector(
+      `.icon[data-app="${app}"]`
+    );
+
+  if(icon)
+    icon.style.display='none';
+
+}
+
+function Desktop_showApp(
+  app
+){
+
+  const hidden =
+    Desktop_hiddenApps();
+
+  delete hidden[app];
+
+  localStorage.setItem(
+    'jackosHiddenApps',
+    JSON.stringify(hidden)
+  );
+
+  const icon =
+    document.querySelector(
+      `.icon[data-app="${app}"]`
+    );
+
+  if(icon)
+    icon.style.display='block';
+
+}
+
 const DesktopState={
 
-  selectedEntry:null
+  selectedEntry:null,
+
+  draggingIcon:null,
+
+  dragId:null,
+
+  dragOffsetX:0,
+
+  dragOffsetY:0
 
 };
+
+const DesktopGrid={
+
+  startX:20,
+  startY:20,
+
+  colWidth:90,
+  rowHeight:100
+
+};
+
+function Desktop_slotKey(
+  slot
+){
+
+  return `${slot.col}:${slot.row}`;
+
+}
+
+function Desktop_slotToPosition(
+  slot
+){
+
+  return {
+
+    left:
+      DesktopGrid.startX +
+      slot.col *
+      DesktopGrid.colWidth,
+
+    top:
+      DesktopGrid.startY +
+      slot.row *
+      DesktopGrid.rowHeight
+
+  };
+
+}
+
+function Desktop_positionToSlot(
+  left,
+  top
+){
+
+  return {
+
+    col:Math.max(
+      0,
+      Math.round(
+        (
+          left -
+          DesktopGrid.startX
+        ) /
+        DesktopGrid.colWidth
+      )
+    ),
+
+    row:Math.max(
+      0,
+      Math.round(
+        (
+          top -
+          DesktopGrid.startY
+        ) /
+        DesktopGrid.rowHeight
+      )
+    )
+
+  };
+
+}
+
+function Desktop_isSlotOccupied(
+  slot,
+  ignoreId=null
+){
+
+  const layout=
+    Desktop_layout();
+
+  const key=
+    Desktop_slotKey(slot);
+
+  for(const id in layout){
+
+    if(id===ignoreId)
+      continue;
+
+    if(
+      layout[id]?.slot &&
+      Desktop_slotKey(
+        layout[id].slot
+      )===key
+    ){
+      return true;
+    }
+
+  }
+
+  return false;
+
+}
+
+function Desktop_findFreeSlot(){
+
+  const layout=
+    Desktop_layout();
+
+  for(
+    let row=0;
+    row<100;
+    row++
+  ){
+
+    for(
+      let col=0;
+      col<20;
+      col++
+    ){
+
+      let used=false;
+
+      for(
+        const id in layout
+      ){
+
+        const item=
+          layout[id];
+
+        if(
+          item?.slot &&
+          item.slot.col===col &&
+          item.slot.row===row
+        ){
+          used=true;
+          break;
+        }
+
+      }
+
+      if(!used)
+        return {col,row};
+
+    }
+
+  }
+
+  return {col:0,row:0};
+
+}
+
 async function Desktop_refreshFiles(){
 
   const desktop =
@@ -856,9 +1220,53 @@ async function Desktop_refreshFiles(){
 
     icon.className=
   'icon desktop-file-icon';
+icon.style.position =
+  'absolute';
+  const existingIcons =
+  desktop.querySelectorAll(
+    '.desktop-file-icon'
+  ).length;
 
+
+const id =
+  'file:' +
+  entry.name;
+
+const saved =
+  Desktop_getLayout(
+    id
+  );
+
+let slot;
+
+if(
+  saved?.slot
+){
+  slot=saved.slot;
+}
+else{
+  slot=
+    Desktop_findFreeSlot();
+
+  Desktop_saveLayout(
+    id,
+    {slot}
+  );
+}
+
+const pos=
+  Desktop_slotToPosition(
+    slot
+  );
+
+icon.style.left=
+  pos.left+'px';
+
+icon.style.top=
+  pos.top+'px';
     icon.dataset.userFile='true';
-
+icon.dataset.entryName =
+  entry.name;
     icon.innerHTML=`
 
 <div class="icon-box">
@@ -872,7 +1280,34 @@ ${entry.name}
 </div>
 
 `;
+icon.addEventListener(
+  'mousedown',
+  e=>{
 
+    if(
+      e.button !== 0
+    )
+      return;
+
+    DesktopState.draggingIcon =
+      icon;
+      DesktopState.dragId =
+  'file:' +
+  entry.name;
+
+    const rect =
+      icon.getBoundingClientRect();
+
+    DesktopState.dragOffsetX =
+      e.clientX -
+      rect.left;
+
+    DesktopState.dragOffsetY =
+      e.clientY -
+      rect.top;
+
+  }
+);
     icon.addEventListener(
       'dblclick',
       ()=>Desktop_openFileEntry(
@@ -953,7 +1388,83 @@ Desktop_propertiesSelected()
   }
 
 }
+document.addEventListener(
+  'mousemove',
+  e=>{
 
+    const icon =
+      DesktopState.draggingIcon;
+
+    if(!icon)
+      return;
+
+    icon.style.left =
+      (
+        e.clientX -
+        DesktopState.dragOffsetX
+      ) + 'px';
+
+    icon.style.top =
+      (
+        e.clientY -
+        DesktopState.dragOffsetY
+      ) + 'px';
+
+  }
+);
+document.addEventListener(
+  'mouseup',
+  ()=>{
+
+    const icon=
+      DesktopState.draggingIcon;
+
+    if(!icon)
+      return;
+
+    const id=
+      DesktopState.dragId;
+
+    const slot=
+      Desktop_positionToSlot(
+        parseInt(icon.style.left)||0,
+        parseInt(icon.style.top)||0
+      );
+
+    const finalSlot=
+      Desktop_isSlotOccupied(
+        slot,
+        id
+      )
+      ? Desktop_findFreeSlot()
+      : slot;
+
+    const pos=
+      Desktop_slotToPosition(
+        finalSlot
+      );
+
+    icon.style.left=
+      pos.left+'px';
+
+    icon.style.top=
+      pos.top+'px';
+
+    Desktop_saveLayout(
+      id,
+      {
+        slot:finalSlot
+      }
+    );
+
+    DesktopState.draggingIcon=
+      null;
+
+    DesktopState.dragId=
+      null;
+
+  }
+);
 async function Desktop_openFileEntry(
   entry
 ){
