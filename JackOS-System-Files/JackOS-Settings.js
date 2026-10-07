@@ -9,7 +9,16 @@ if(
   return;
 }
 
-  ['settingsMain','settingsDataPanel','settingsSandboxPanel','settingsApplicationsPanel','settingsTaskbarPanel'].forEach(id=>{ const panel=document.getElementById(id); if(panel) panel.style.display='none'; });
+  [
+'settingsMain',
+'settingsDataPanel',
+'settingsSandboxPanel',
+'settingsApplicationsPanel',
+'settingsTaskbarPanel',
+'settingsAboutPanel'
+]
+  .forEach(id=>{ const panel=document.getElementById(id); if(panel) panel.style.display='none'; });
+  
   const accPanel=document.getElementById('settingsAccountsPanel'); if(accPanel){ accPanel.style.display='block'; Settings_renderAccList(); }
 }
 
@@ -28,11 +37,16 @@ if(
   const data = document.getElementById('settingsDataPanel');
   const apps = document.getElementById('settingsApplicationsPanel');
   const taskbar = document.getElementById('settingsTaskbarPanel');
-
+const about =
+  document.getElementById(
+    'settingsAboutPanel'
+  );
   if(main) main.style.display = 'none';
   if(acc)  acc.style.display  = 'none';
   if(apps) apps.style.display = 'none';
   if(taskbar) taskbar.style.display = 'none';
+  if(about)
+  about.style.display='none';
   if(data) data.style.display = 'block';
 }
 function Settings_showApplications(){
@@ -43,7 +57,16 @@ if(
   return;
 }
 
-  ['settingsMain','settingsAccountsPanel','settingsDataPanel','settingsSandboxPanel'].forEach(id=>{ const panel=document.getElementById(id); if(panel) panel.style.display='none'; });
+  [
+'settingsMain',
+'settingsAccountsPanel',
+'settingsDataPanel',
+'settingsSandboxPanel',
+'settingsTaskbarPanel',
+'settingsAboutPanel'
+]
+  
+  .forEach(id=>{ const panel=document.getElementById(id); if(panel) panel.style.display='none'; });
   const panel=document.getElementById('settingsApplicationsPanel');
   if(panel) panel.style.display='block';
   InstalledApps_scan().then(Settings_renderApplications);
@@ -266,7 +289,9 @@ function Settings_backToMain(){
 
   const apps = document.getElementById('settingsApplicationsPanel');
   const taskbar = document.getElementById('settingsTaskbarPanel');
-
+const about = document.getElementById(
+  'settingsAboutPanel'
+);
   if(acc)
     acc.style.display='none';
 
@@ -280,14 +305,200 @@ function Settings_backToMain(){
     apps.style.display='none';
   if(taskbar)
     taskbar.style.display='none';
+  if(about)
+  about.style.display='none';
 
   if(main)
     main.style.display='block';
 
 }
+async function Settings_showAboutJackOS(){
 
+  [
+    'settingsMain',
+    'settingsAccountsPanel',
+    'settingsDataPanel',
+    'settingsSandboxPanel',
+    'settingsApplicationsPanel',
+    'settingsTaskbarPanel'
+  ].forEach(id=>{
+
+    const panel =
+      document.getElementById(id);
+
+    if(panel)
+      panel.style.display='none';
+
+  });
+
+  const panel =
+    document.getElementById(
+      'settingsAboutPanel'
+    );
+
+  if(panel)
+    panel.style.display='block';
+
+  AboutJackOS_refresh();
+
+}
+async function AboutJackOS_refresh(){
+
+  const activated =
+    localStorage.getItem(
+      'jackosActivated'
+    ) === 'true';
+
+  const edition =
+    localStorage.getItem(
+      'jackosEdition'
+    ) || 'Unavailable';
+
+  const key =
+    localStorage.getItem(
+      'jackosActivationKey'
+    ) || 'None';
+
+  const date =
+    localStorage.getItem(
+      'jackosActivationDate'
+    );
+
+  let server =
+    'Blocked ✖';
+
+  let store =
+    'Blocked ✖';
+
+  if(
+    activated &&
+    edition !== 'Home'
+  ){
+
+    try{
+
+      const test =
+        await fetch(
+          '../JackOS-Server-Files/connection.md',
+          {
+            cache:'no-store'
+          }
+        );
+
+      server =
+        test.ok
+          ? 'Connected ✓'
+          : 'Unavailable ⚠';
+
+    }catch(e){
+
+      server =
+        'Unavailable ⚠';
+
+    }
+
+    try{
+
+      const test =
+        await fetch(
+          '../JackOS-Server-Files/App-Store/Apps/apps.json',
+          {
+            cache:'no-store'
+          }
+        );
+
+      store =
+        test.ok
+          ? 'Connected ✓'
+          : 'Unavailable ⚠';
+
+    }catch(e){
+
+      store =
+        'Unavailable ⚠';
+
+    }
+
+  }
+
+  document.getElementById(
+    'aboutActivateBtn'
+  ).style.display =
+    activated
+      ? 'none'
+      : 'inline-block';
+
+  document.getElementById(
+    'aboutJackOSContent'
+  ).innerHTML =
+
+`
+Status:
+${activated ? 'Activated ✓' : 'Not Activated ✖'}
+
+<br><br>
+
+Licence:
+${activated?key:'None'}
+
+<br><br>
+
+Edition:
+${activated?edition:'Unavailable'}
+
+<br><br>
+
+Version:
+JackOS v${JACKOS_VERSION}
+
+<br><br>
+
+Activated:
+${activated
+ ? new Date(date)
+   .toLocaleDateString(
+     'en-GB',
+     {
+       day:'numeric',
+       month:'long',
+       year:'numeric'
+     }
+   )
+ : 'N/A'}
+
+<br><br>
+
+Current User:
+${currentUser||'--'}
+
+<br><br>
+
+Build:
+v5 Beta 3
+
+<br><br>
+
+Server:
+${server}
+
+<br><br>
+
+App Store:
+${store}
+
+`;
+
+}
 function Settings_showTaskbar(){
-  ['settingsMain','settingsAccountsPanel','settingsDataPanel','settingsSandboxPanel','settingsApplicationsPanel'].forEach(id=>{ const panel=document.getElementById(id); if(panel) panel.style.display='none'; });
+  [
+'settingsMain',
+'settingsAccountsPanel',
+'settingsDataPanel',
+'settingsSandboxPanel',
+'settingsApplicationsPanel',
+'settingsAboutPanel'
+]
+  .forEach(id=>{ const panel=document.getElementById(id); if(panel) panel.style.display='none'; });
   const panel=document.getElementById('settingsTaskbarPanel'); if(panel) panel.style.display='block';
   const compact=document.getElementById('taskbarCompact'); if(compact) compact.checked=localStorage.getItem('jackosTaskbarCompact')==='true';
   const list=document.getElementById('taskbarPinList'); if(!list) return; list.innerHTML=''; const pinned=JSON.parse(localStorage.getItem('jackosTaskbarPins')||'[]');
@@ -331,7 +542,15 @@ function Settings_open(){
   if(!win) return;
 
   Settings_renderAccList();
-  ['settingsAccountsPanel','settingsDataPanel','settingsSandboxPanel','settingsApplicationsPanel','settingsTaskbarPanel'].forEach(id=>{ const panel=document.getElementById(id); if(panel) panel.style.display='none'; });
+  [
+'settingsAccountsPanel',
+'settingsDataPanel',
+'settingsSandboxPanel',
+'settingsApplicationsPanel',
+'settingsTaskbarPanel',
+'settingsAboutPanel'
+]
+  .forEach(id=>{ const panel=document.getElementById(id); if(panel) panel.style.display='none'; });
   const main=document.getElementById('settingsMain'); if(main) main.style.display='block';
 
 const guest =

@@ -22,20 +22,173 @@ if(id==='login'){ Login_resetFields(); Login_applyUser(); applyLoginWallpaper();
 // Startup
 const Startup_mainText=document.getElementById('main-text');
 window.addEventListener('load', ()=>{ setTimeout(()=>Startup_mainText.style.opacity=1, 200); setTimeout(()=>{ Startup_mainText.style.opacity=0; setTimeout(()=>{ const activated = localStorage.getItem('jackosActivated')==='true'; Users_migrate(); if(activated){ if(Users_hasAny()) show('login', true); else show('setup', true); } else document.getElementById('popup').style.display='block'; }, 1200); }, 2200); });
-function Startup_checkKey(){ const key=document.getElementById('activation-key').value.trim(); 
-if(key==='GUES-TACT-IVAT-ION'){
+async function Startup_checkKey(){
+
+  const key =
+    document
+      .getElementById(
+        'activation-key'
+      )
+      .value
+      .trim();
+
+  if(!key){
+    alert(
+      'Enter an activation key.'
+    );
+    return;
+  }
+
+  try{
+
+    const response =
+      await fetch(
+        '../JackOS-Server-Files/Activation-Keys/Activation.json',
+        {
+          cache:'no-store'
+        }
+      );
+
+    if(!response.ok){
+
+      alert(
+        'Activation server unavailable.'
+      );
+
+      return;
+
+    }
+
+    const data =
+      await response.json();
+
+    const licence =
+      data.keys.find(
+        item=>
+          item.key===key
+      );
+
+    if(!licence){
+
+      alert(
+        'Invalid activation key.'
+      );
+
+      return;
+
+    }
+
+    localStorage.setItem(
+      'jackosActivated',
+      'true'
+    );
+
+    localStorage.setItem(
+      'jackosActivationKey',
+      licence.key
+    );
+
+    localStorage.setItem(
+      'jackosEdition',
+      licence.edition
+    );
+
+    localStorage.setItem(
+      'jackosUpgradeAllowed',
+      String(
+        !!licence.upgrade
+      )
+    );
+
+    localStorage.setItem(
+      'jackosActivationDate',
+      new Date()
+      .toISOString()
+    );
+
+    JACKOS_EDITION =
+      licence.edition;
+
+    Users_migrate();
+
+    if(
+      Users_hasAny()
+    ){
+      show(
+        'login',
+        true
+      );
+    }else{
+      show(
+        'setup',
+        true
+      );
+    }
+
+  }catch(error){
+
+    alert(
+      'Activation failed.'
+    );
+
+  }
+
+}
+function Startup_continueWithoutActivation(){
+
+  const ok =
+    confirm(
+
+      'JackOS can still be used.\n\n' +
+
+      'However:\n\n' +
+
+      '• App Store will be unavailable\n' +
+
+      '• Server features will be unavailable\n' +
+
+      '• System Import will be unavailable\n' +
+
+      '• System Export will be unavailable\n\n' +
+
+      'Continue?'
+
+    );
+
+  if(!ok)
+    return;
+
   localStorage.setItem(
-  'jackosActivated',
-  'true'
+    'jackosActivated',
+    'false'
+  );
+  localStorage.removeItem(
+  'jackosActivationKey'
 );
 
-  localStorage.setItem("jackosEdition", "Home");
-  JACKOS_EDITION = "Home";
+localStorage.removeItem(
+  'jackosActivationDate'
+);
 
-  
-  Users_migrate();
-  const activatedUsers=Users_all(); activatedUsers.forEach(user=>{ user.edition='Home'; }); Users_save(activatedUsers);
- if(Users_hasAny()) show('login', true); else show('setup', true); } else alert('Invalid activation key.'); }
+localStorage.removeItem(
+  'jackosUpgradeAllowed'
+);
+
+  if(
+    Users_hasAny()
+  ){
+    show(
+      'login',
+      true
+    );
+  }else{
+    show(
+      'setup',
+      true
+    );
+  }
+
+}
 // Start menu & power
 function Desktop_toggleStartMenu(){ const sm=document.getElementById('startMenu'); if(sm){ sm.classList.toggle('show'); } }
 function Desktop_hideStartMenu(){ const sm=document.getElementById('startMenu'); if(sm){ sm.classList.remove('show'); } }
@@ -644,7 +797,36 @@ button.addEventListener('mouseleave',()=>{
     tip.style.display='none';
 
 });
-  bar.append(button); }); const user=document.getElementById('taskbarUser'); if(user) user.textContent=currentUser||'--'; document.querySelector('#desktop .taskbar')?.classList.toggle('compact',localStorage.getItem('jackosTaskbarCompact')==='true'); }
+  bar.append(button); }); const user=document.getElementById('taskbarUser');
+  
+  if(user){
+
+  if(
+    JackOS_IsActivated()
+  ){
+
+    user.textContent =
+      '✓ ' +
+      JACKOS_EDITION +
+      ' ' +
+      (
+        currentUser ||
+        '--'
+      );
+
+  }else{
+
+    user.textContent =
+      '✖ -- ' +
+      (
+        currentUser ||
+        '--'
+      );
+
+  }
+
+}
+  document.querySelector('#desktop .taskbar')?.classList.toggle('compact',localStorage.getItem('jackosTaskbarCompact')==='true'); }
 
 
 

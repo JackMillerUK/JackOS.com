@@ -24,7 +24,20 @@
     <p>ACTIVATION ERROR! <br><br>This software has not been activated.</p>
     <p>Please put in your product activation key below to successfully activate this software:</p>
     <input type="text" id="activation-key" placeholder="Enter activation key">
-    <button onclick="Startup_checkKey()">Activate</button>
+    
+    
+    <button onclick="Startup_checkKey()">
+Activate
+</button>
+
+<button
+onclick="Startup_continueWithoutActivation()"
+class="btn ghost"
+style="margin-top:8px;"
+>
+Continue Without Activating
+</button>
+  
   </div>
 </section>
 
@@ -627,6 +640,12 @@ Media
     <div class="set-panel" id="settingsMain">
       <h3 style="margin-top:0;">Settings</h3>
       <div class="set-actions" style="margin-top:6px;">
+  <button
+class="explorer-btn"
+onclick="Settings_showAboutJackOS()"
+>
+About JackOS
+</button>
   <button class="explorer-btn" onclick="Settings_showAccounts()">Accounts</button>
   <button class="explorer-btn" onclick="Settings_showData()">Data</button>
   <button class="explorer-btn" onclick="Settings_showApplications()">Applications</button>
@@ -655,13 +674,56 @@ Media
     </div>
 
     <div class="set-panel" id="settingsTaskbarPanel" style="display:none;">
+      
       <h3 style="margin-top:0;">Taskbar</h3>
       <label><input id="taskbarCompact" type="checkbox"> Compact taskbar</label>
       <h4>Pin apps</h4>
       <div id="taskbarPinList"></div>
       <div class="set-actions" style="margin-top:12px;"><button class="explorer-btn" onclick="Settings_saveTaskbar()">Save</button><button class="explorer-btn ghost" onclick="Settings_backToMain()">Back</button></div>
     </div>
+<!-- About JackOS Panel -->
+<div
+class="set-panel"
+id="settingsAboutPanel"
+style="display:none;"
+>
 
+<h3>
+About JackOS
+</h3>
+
+<div
+id="aboutJackOSContent"
+></div>
+
+<div
+class="set-actions"
+style="margin-top:12px;"
+>
+
+<button
+id="aboutActivateBtn"
+class="explorer-btn"
+onclick="
+show('startup', true);
+document.getElementById('popup').style.display='block';
+Settings_close();
+"
+style="display:none;"
+>
+Activate JackOS
+</button>
+
+<button
+class="explorer-btn ghost"
+onclick="Settings_backToMain()"
+>
+Back
+</button>
+
+</div>
+
+</div>
     <!-- Accounts panel (hidden until user clicks "Accounts") -->
     <div class="set-panel" id="settingsAccountsPanel" style="display:none;">
       <h3 style="margin-top:0;">Accounts</h3>

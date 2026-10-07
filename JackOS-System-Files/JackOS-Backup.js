@@ -10,6 +10,17 @@ async function Backup_addDirectory(zip, dir, path){
   }
 }
 function Backup_download(file){ const url=URL.createObjectURL(file); const link=document.createElement('a'); link.href=url; link.download=file.name; document.body.appendChild(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000); }
+
+function Backup_allowed(){
+
+  return (
+    localStorage.getItem(
+      'jackosUpgradeAllowed'
+    ) === 'true'
+  );
+
+}
+
 function Backup_accountsForExport(){
   const panel=document.createElement('div'); panel.className='modal'; panel.style.display='flex';
   const shade=document.createElement('div'); shade.className='shade'; const box=document.createElement('div'); box.className='panel';
@@ -97,8 +108,25 @@ function Backup_accountsForExport(){
 };
 
 }
-function System_exportPrompt(){ Admin_requireStrict(Backup_accountsForExport); }
+function System_exportPrompt(){
 
+  if(
+    !Backup_allowed()
+  ){
+
+    alert(
+      'This licence does not permit System Backup or Restore.'
+    );
+
+    return;
+
+  }
+
+  Admin_requireStrict(
+    Backup_accountsForExport
+  );
+
+}
 async function System_export(
   accounts,
   passwordHash,
@@ -263,7 +291,17 @@ async function System_export(
   }
 }
 function System_import(){
+  if(
+    !Backup_allowed()
+  ){
 
+    alert(
+      'This licence does not permit System Backup or Restore.'
+    );
+
+    return;
+
+  }
   Admin_requireStrict(() => {
 
     document.getElementById(
@@ -574,12 +612,130 @@ function exportWallpaperSettings(){ return {wallpaper:localStorage.getItem('jack
 function importWallpaperSettings(data){ if(!data) return; if(data.wallpaper===null) localStorage.removeItem('jackosWallpaper'); else localStorage.setItem('jackosWallpaper',data.wallpaper); if(data.wallpaperData===null) localStorage.removeItem('jackosWallpaperData'); else localStorage.setItem('jackosWallpaperData',data.wallpaperData); }
 function exportSecurityQuestions(){ const out={}; Users_all().forEach(user=>{ const value=localStorage.getItem('SecQ:'+user.name); if(value) out[user.name]=JSON.parse(value); }); return out; }
 function importSecurityQuestions(data){ Object.entries(data||{}).forEach(([name,value])=>localStorage.setItem('SecQ:'+name,JSON.stringify(value))); }
-function Edition_IsPro(){ return JACKOS_EDITION==='Pro'; }
-function Edition_IsPrivateOrPro(){ return JACKOS_EDITION==='Private'||JACKOS_EDITION==='Pro'; }
-function Desktop_UpdateEditionFeatures(){ const btn=document.getElementById('serverTestBtn'); if(btn) btn.style.display=Edition_IsPrivateOrPro()?'block':'none'; document.querySelectorAll('[data-app="music"]').forEach(item=>item.style.display=Edition_IsPrivateOrPro()?'':'none'); }
-async function JackOS_TestConnection(){ if(!Edition_IsPrivateOrPro()) return; try{ const response=await fetch('../JackOS-Server-Files/connection.md'); if(!response.ok) throw new Error(); alert((await response.text()).trim()||'Connection seems to be offline.'); }catch(e){ alert('Connection seems to be offline.'); } }
 
 
+
+function JackOS_IsActivated(){
+
+  return (
+    localStorage.getItem(
+      'jackosActivated'
+    ) === 'true'
+  );
+
+}
+
+function Edition_IsPro(){
+
+  return (
+    JackOS_IsActivated()
+    &&
+    JACKOS_EDITION==='Pro'
+  );
+
+}
+
+function Edition_IsPrivateOrPro(){
+
+  return (
+    JackOS_IsActivated()
+    &&
+    (
+      JACKOS_EDITION==='Private'
+      ||
+      JACKOS_EDITION==='Pro'
+    )
+  );
+
+}
+
+
+function Desktop_UpdateEditionFeatures(){
+
+  const activated =
+    JackOS_IsActivated();
+
+  const serverBtn =
+    document.getElementById(
+      'serverTestBtn'
+    );
+
+  if(serverBtn){
+
+    serverBtn.style.display =
+      (
+        activated
+        &&
+        Edition_IsPrivateOrPro()
+      )
+      ? 'block'
+      : 'none';
+
+  }
+
+  document
+    .querySelectorAll(
+      '[data-app="music"]'
+    )
+    .forEach(item=>{
+
+      item.style.display =
+        (
+          activated
+          &&
+          Edition_IsPrivateOrPro()
+        )
+        ? ''
+        : 'none';
+
+    });
+
+  document
+    .querySelectorAll(
+      '[data-app="appstore"]'
+    )
+    .forEach(item=>{
+
+      item.style.display =
+        (
+          activated
+          &&
+          JACKOS_EDITION!=='Home'
+        )
+        ? ''
+        : 'none';
+
+    });
+
+}
+async function JackOS_TestConnection(){ 
+  if(
+  !JackOS_IsActivated()
+){
+
+  alert(
+    'JackOS must be activated.'
+  );
+
+  return;
+
+}
+
+if(
+  JACKOS_EDITION==='Home'
+){
+
+  alert(
+    'JackOS Home does not include server features.'
+  );
+
+  return;
+
+}
+  
+  if(!Edition_IsPrivateOrPro()) return; try{ const response=await fetch('../JackOS-Server-Files/connection.md'); if(!response.ok) throw new Error(); alert((await response.text()).trim()||'Connection seems to be offline.'); }catch(e){ alert('Connection seems to be offline.'); } 
+
+}
 // SHA-256 Helper
 
 async function Backup_sha256(str){

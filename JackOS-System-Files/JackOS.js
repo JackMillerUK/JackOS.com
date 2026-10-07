@@ -1,13 +1,17 @@
 //JackOS.js
-// JackOS Core JS (v5 Beta 3 4th October 2026 Release)
+// JackOS Core JS (v5 Beta 3 7th October 2026 Release)
 
 
 
 /* JackOS version number global variable and JackOS Edition global variable */
 
+// New JackOS Specs Variables For New Activation System (released v5 Beta 3)
 const JACKOS_VERSION = "5.0 Beta 3";
-let JACKOS_EDITION = localStorage.getItem("jackosEdition");
 
+let JACKOS_EDITION =
+  localStorage.getItem(
+    "jackosEdition"
+  ) || "Home";
 
 
 
@@ -563,6 +567,29 @@ if(
   const bytes=await pkg.zip.generateAsync({type:'uint8array'}); InstalledApps_removeWindow(name); await Applications_writeZip(name, bytes); localStorage.setItem('jackosAppInstall:'+UserData_key()+':'+name, new Date().toISOString()); await InstalledApps_scan(); AppStore_render();
 }
 async function AppStore_open(){
+    if(
+    !JackOS_IsActivated()
+  ){
+
+    alert(
+      'Activate JackOS to use the App Store.'
+    );
+
+    return;
+
+  }
+
+  if(
+    JACKOS_EDITION==='Home'
+  ){
+
+    alert(
+      'App Store is unavailable on Home edition.'
+    );
+
+    return;
+
+  }
   const app=document.getElementById('appStoreApp'); if(!app) return;
    app.style.display='block';
 
