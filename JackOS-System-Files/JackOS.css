@@ -1299,3 +1299,352 @@ background .15s ease;
   background:#4ea8ff;
   transition:width .25s ease;
 }
+
+/* =========================================================
+   JackOS v5 First-Run Experience
+   Premium OOBE layer. Existing desktop styles remain intact.
+   ========================================================= */
+:root{
+  --oobe-accent:#0a84ff;
+  --oobe-bg:#070a12;
+  --oobe-panel:rgba(18,22,34,.72);
+  --oobe-panel-strong:rgba(22,27,42,.9);
+  --oobe-border:rgba(255,255,255,.13);
+  --oobe-text:#f7f9ff;
+  --oobe-muted:#aeb8cc;
+}
+body[data-edition="home"]{--oobe-accent:#0a84ff}
+body[data-edition="private"]{--oobe-accent:#8b5cf6}
+body[data-edition="pro"]{--oobe-accent:#2f9bff}
+body[data-edition="elite"]{--oobe-accent:#eab308}
+
+.oobe-screen{
+  background:
+    radial-gradient(circle at 18% 12%, color-mix(in srgb,var(--oobe-accent) 28%,transparent), transparent 35%),
+    radial-gradient(circle at 82% 86%, color-mix(in srgb,var(--oobe-accent) 18%,transparent), transparent 34%),
+    linear-gradient(145deg,#060812,#0b1020 55%,#05070e);
+  overflow:auto;
+}
+.oobe-shell{
+  width:min(1180px,calc(100vw - 48px));
+  min-height:100%;
+  margin:auto;
+  padding:38px 0 34px;
+  position:relative;
+  z-index:2;
+}
+.centered-shell{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  min-height:100vh;
+  padding-top:60px;
+  padding-bottom:60px;
+}
+.oobe-topline{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:18px;
+  margin-bottom:28px;
+}
+.oobe-brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:15px;
+  font-weight:700;
+  letter-spacing:.01em;
+}
+.oobe-brand img{width:28px;height:28px;object-fit:contain}
+.oobe-progress{
+  display:flex;
+  gap:7px;
+  margin:0 0 46px;
+}
+.oobe-progress span{
+  height:4px;
+  width:54px;
+  border-radius:999px;
+  background:rgba(255,255,255,.12);
+  transition:.35s ease;
+}
+.oobe-progress span.active,.oobe-progress span.done{background:var(--oobe-accent);box-shadow:0 0 18px color-mix(in srgb,var(--oobe-accent) 65%,transparent)}
+.oobe-copy{max-width:760px;margin-bottom:28px}
+.oobe-copy h1,.oobe-shell h1{
+  font-size:clamp(34px,5vw,58px);
+  line-height:1.02;
+  letter-spacing:-.045em;
+  margin:7px 0 12px;
+}
+.oobe-copy p,.hero-description{
+  color:var(--oobe-muted);
+  font-size:17px;
+  line-height:1.6;
+  max-width:700px;
+  margin:0;
+}
+.eyebrow{
+  color:color-mix(in srgb,var(--oobe-accent) 80%,white);
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+}
+.oobe-muted{color:var(--oobe-muted);line-height:1.55}
+.edition-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:7px 11px;
+  border-radius:999px;
+  background:color-mix(in srgb,var(--oobe-accent) 16%,transparent);
+  border:1px solid color-mix(in srgb,var(--oobe-accent) 48%,transparent);
+  color:#fff;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.12em;
+}
+.oobe-card{
+  background:linear-gradient(145deg,rgba(255,255,255,.09),rgba(255,255,255,.035));
+  border:1px solid var(--oobe-border);
+  box-shadow:0 22px 70px rgba(0,0,0,.32),inset 0 1px rgba(255,255,255,.08);
+  backdrop-filter:blur(28px);
+  -webkit-backdrop-filter:blur(28px);
+  border-radius:28px;
+  padding:26px;
+}
+.card-heading{
+  display:flex;gap:13px;align-items:flex-start;margin-bottom:20px;
+}
+.card-heading h3{margin:0 0 4px;font-size:18px}
+.card-heading p{margin:0;color:var(--oobe-muted);font-size:13px}
+.card-icon,.hero-icon{
+  display:grid;place-items:center;
+  width:46px;height:46px;flex:none;
+  border-radius:15px;
+  background:color-mix(in srgb,var(--oobe-accent) 14%,white 3%);
+  border:1px solid color-mix(in srgb,var(--oobe-accent) 25%,transparent);
+}
+.account-layout{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:18px;
+}
+.oobe-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.oobe-input{
+  width:100%;border:1px solid rgba(255,255,255,.12)!important;
+  background:rgba(0,0,0,.22)!important;color:#fff!important;
+  border-radius:14px!important;padding:14px 15px!important;
+  outline:none!important;box-shadow:none!important;
+}
+.oobe-input:focus{
+  border-color:color-mix(in srgb,var(--oobe-accent) 65%,white)!important;
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--oobe-accent) 15%,transparent)!important;
+}
+.oobe-button-row,.oobe-footer{
+  display:flex;justify-content:flex-end;align-items:center;gap:10px;
+}
+.oobe-button-row{margin-top:13px;justify-content:flex-start;flex-wrap:wrap}
+.oobe-footer{margin-top:24px}
+.oobe-primary{
+  background:var(--oobe-accent)!important;
+  border-color:transparent!important;
+  color:white!important;
+  box-shadow:0 10px 28px color-mix(in srgb,var(--oobe-accent) 28%,transparent)!important;
+}
+.oobe-primary:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.setup-list{
+  display:flex;flex-direction:column;gap:10px;min-height:90px;
+}
+.setup-user{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:13px 14px;border-radius:15px;
+  background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08);
+}
+.setup-user label{display:flex;align-items:center;gap:7px;font-size:14px}
+.setup-user input{accent-color:var(--oobe-accent)}
+.oobe-message{min-height:21px;margin:10px 0;color:#b8c8df;font-size:13px}
+.oobe-message.error{color:#ff9b9b}
+.oobe-message.loading{color:#a8c8ff}
+.hero-icon{
+  width:86px;height:86px;border-radius:27px;font-size:40px;margin-bottom:28px;
+  box-shadow:0 0 70px color-mix(in srgb,var(--oobe-accent) 28%,transparent);
+}
+.hero-button{margin-top:30px;min-width:180px}
+.edition-reveal{
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;position:relative;overflow:hidden;
+}
+.reveal-orb{
+  position:absolute;width:420px;height:420px;border-radius:50%;
+  background:radial-gradient(circle,color-mix(in srgb,var(--oobe-accent) 42%,transparent),transparent 68%);
+  filter:blur(8px);opacity:.45;transform:scale(.5);
+}
+.reveal-icon,.final-logo{
+  position:relative;display:grid;place-items:center;width:110px;height:110px;
+  border-radius:34px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);
+  font-size:54px;box-shadow:0 24px 80px rgba(0,0,0,.32);
+  margin-bottom:26px;
+}
+.reveal-playing .reveal-icon{animation:oobeReveal .8s cubic-bezier(.2,.8,.2,1) both}
+.reveal-playing .reveal-orb{animation:oobeOrb 2.2s ease both}
+.reveal-playing h1{animation:oobeRise .7s .15s both}
+.reveal-playing .eyebrow,.reveal-playing p,.reveal-playing .edition-badge{animation:oobeRise .7s .25s both}
+.reveal-icon + .eyebrow{position:relative}
+.reveal-icon~h1{font-size:clamp(42px,7vw,76px);letter-spacing:-.055em;margin:8px 0 10px}
+.edition-reveal p{position:relative;color:var(--oobe-muted);font-size:19px;margin:0 0 18px}
+.feature-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;
+}
+.feature-card{
+  display:flex;gap:15px;align-items:flex-start;padding:19px;
+  border-radius:19px;background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.085);
+  animation:cardIn .45s both;
+}
+.feature-card:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--oobe-accent) 34%,transparent)}
+.feature-icon{
+  display:grid;place-items:center;width:40px;height:40px;flex:none;border-radius:13px;
+  background:color-mix(in srgb,var(--oobe-accent) 12%,transparent);font-size:20px;
+}
+.feature-card h3{margin:1px 0 4px;font-size:15px}
+.feature-card p{margin:0;color:var(--oobe-muted);font-size:13px;line-height:1.45}
+.app-install-grid{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;
+}
+.app-install-card{
+  padding:18px;border-radius:20px;background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.09);transition:.25s ease;
+}
+.app-install-card.selected{
+  border-color:color-mix(in srgb,var(--oobe-accent) 60%,transparent);
+  background:color-mix(in srgb,var(--oobe-accent) 9%,rgba(255,255,255,.045));
+  box-shadow:0 12px 38px color-mix(in srgb,var(--oobe-accent) 10%,transparent);
+}
+.app-card-header{display:flex;gap:13px;min-height:62px}
+.app-card-icon{
+  width:50px;height:50px;display:grid;place-items:center;flex:none;border-radius:15px;
+  background:rgba(255,255,255,.08);font-size:23px;background-size:cover;background-position:center;
+}
+.app-card-icon.image-icon{background-color:#fff}
+.app-card-title h3{font-size:16px;margin:1px 0 5px}
+.app-card-title p{font-size:12px;line-height:1.45;color:var(--oobe-muted);margin:0}
+.app-card-users{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}
+.user-chip{
+  display:inline-flex;align-items:center;gap:5px;padding:7px 9px;border-radius:999px;
+  background:rgba(255,255,255,.06);font-size:11px;color:#dfe6f5;cursor:pointer;
+}
+.user-chip input{accent-color:var(--oobe-accent)}
+.user-chip.all-users{width:100%;border-radius:10px}
+.app-card-status{font-size:11px;color:var(--oobe-muted);margin-top:12px}
+.loading-state,.empty-state{
+  grid-column:1/-1;min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;border:1px dashed rgba(255,255,255,.12);border-radius:20px;color:var(--oobe-muted);text-align:center;padding:24px;
+}
+.loading-state{flex-direction:row}
+.final-shell{max-width:700px}
+.final-logo{width:82px;height:82px;border-radius:25px;margin-bottom:24px}
+.final-logo img{width:55px;height:55px;object-fit:contain}
+.final-checklist{
+  width:min(560px,100%);margin:30px auto 18px;display:flex;flex-direction:column;gap:7px;text-align:left;
+}
+.final-step{
+  display:flex;align-items:center;gap:13px;padding:14px 15px;border-radius:14px;
+  color:#7f8aa0;transition:.3s ease;
+}
+.final-step.active{background:rgba(255,255,255,.055);color:#fff}
+.final-step.done{color:#dbe4f5}
+.final-step-icon{width:24px;text-align:center;font-weight:800;color:var(--oobe-accent)}
+.final-step.done .final-step-icon{color:#51e18a}
+.final-progress{height:5px;width:min(560px,100%);background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden}
+.final-progress span{display:block;height:100%;width:0;background:var(--oobe-accent);border-radius:99px;transition:width .4s ease;box-shadow:0 0 16px color-mix(in srgb,var(--oobe-accent) 50%,transparent)}
+.oobe-modal{z-index:5000!important;background:rgba(0,0,0,.48)!important;backdrop-filter:blur(12px)}
+.oobe-security-panel{
+  width:min(620px,calc(100vw - 32px))!important;border-radius:26px!important;
+  background:rgba(16,20,31,.92)!important;border:1px solid rgba(255,255,255,.12)!important;
+  box-shadow:0 30px 100px rgba(0,0,0,.5)!important;
+}
+.security-progress{color:color-mix(in srgb,var(--oobe-accent) 80%,white);font-weight:700}
+.spinner{border-color:rgba(255,255,255,.16)!important;border-top-color:var(--oobe-accent)!important}
+
+.oobe-startup{
+  background:
+    radial-gradient(circle at 15% 20%,color-mix(in srgb,#0a84ff 20%,transparent),transparent 35%),
+    radial-gradient(circle at 80% 75%,color-mix(in srgb,#5e5ce6 18%,transparent),transparent 40%),
+    #05070d;
+}
+html[data-jackos-boot="normal"] .oobe-startup{background:#000;}
+html[data-jackos-boot="normal"] .oobe-startup-bg{display:none;}
+.startup-monkey{font-size:92px;line-height:1;filter:drop-shadow(0 20px 40px rgba(0,0,0,.35));}
+.oobe-startup-bg{
+  position:absolute;inset:-25%;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.04),transparent 70%);
+  transform:rotate(-8deg);animation:oobeGradient 7s linear infinite;
+}
+.startup-shell{position:relative;z-index:2;width:min(480px,calc(100vw - 34px));margin:auto;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.startup-brand{text-align:center;position:absolute;top:34%;left:50%;transform:translateX(-50%);width:100%}
+.startup-logo{width:92px;height:92px;object-fit:contain;filter:drop-shadow(0 20px 40px rgba(0,0,0,.35))}
+.startup-version{margin-top:12px;color:rgba(255,255,255,.58);font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+.activation-card{
+  width:100%;padding:34px;border-radius:28px;background:rgba(16,20,32,.72);
+  border:1px solid rgba(255,255,255,.13);backdrop-filter:blur(30px);
+  box-shadow:0 30px 100px rgba(0,0,0,.48);
+}
+.activation-card h1{font-size:34px;letter-spacing:-.04em;margin:8px 0 9px}
+.activation-card .oobe-input{margin:7px 0 4px}
+.oobe-field-label{display:block;font-size:12px;color:#aeb8cc;margin-top:22px}
+.activation-card .btn{width:100%;margin-top:7px}
+.activation-card .oobe-primary{margin-top:4px}
+.activation-card .oobe-secondary{margin-top:9px}
+
+@keyframes oobeReveal{from{opacity:0;transform:translateY(18px) scale(.72)}to{opacity:1;transform:none}}
+@keyframes oobeOrb{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:.45}}
+@keyframes oobeRise{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:none}}
+@keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes oobeGradient{from{transform:translateX(-15%) rotate(-8deg)}to{transform:translateX(15%) rotate(-8deg)}}
+@media(max-width:900px){
+  .app-install-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:700px){
+  .oobe-shell{width:min(100% - 28px,1180px);padding-top:24px}
+  .account-layout,.feature-grid,.oobe-grid{grid-template-columns:1fr}
+  .app-install-grid{grid-template-columns:1fr}
+  .oobe-copy h1,.oobe-shell h1{font-size:38px}
+  .oobe-progress span{width:36px}
+  .oobe-footer{position:sticky;bottom:0;padding:12px 0;background:linear-gradient(transparent,var(--oobe-bg) 35%)}
+  .activation-card{padding:25px}
+}
+@media(prefers-reduced-motion:reduce){
+  .oobe-startup-bg,.reveal-playing .reveal-icon,.reveal-playing .reveal-orb{animation:none!important}
+  *{scroll-behavior:auto!important}
+}
+
+/* JackOS Setup Helper: premium aura layer */
+.oobe-screen::before,
+.oobe-screen::after{
+  content:"";position:fixed;pointer-events:none;z-index:0;inset:-20%;
+  background:
+    radial-gradient(circle at 18% 22%,color-mix(in srgb,var(--oobe-accent) 34%,transparent),transparent 23%),
+    radial-gradient(circle at 78% 18%,color-mix(in srgb,#ffffff 10%,transparent),transparent 20%),
+    radial-gradient(circle at 72% 78%,color-mix(in srgb,var(--oobe-accent) 24%,transparent),transparent 27%),
+    radial-gradient(circle at 20% 82%,color-mix(in srgb,#5e5ce6 16%,transparent),transparent 22%);
+  filter:blur(42px);opacity:.8;animation:oobeAura 16s ease-in-out infinite alternate;
+}
+.oobe-screen::after{animation-duration:22s;animation-direction:alternate-reverse;opacity:.48;transform:scale(1.08)}
+.oobe-screen > *{position:relative;z-index:1}
+.oobe-shell{position:relative;overflow:visible}
+.app-install-card{animation:cardIn .55s cubic-bezier(.2,.8,.2,1) both;backdrop-filter:blur(22px);box-shadow:0 18px 60px rgba(0,0,0,.18)}
+.app-install-card:hover{transform:translateY(-4px) scale(1.005);border-color:color-mix(in srgb,var(--oobe-accent) 42%,rgba(255,255,255,.14));box-shadow:0 22px 70px color-mix(in srgb,var(--oobe-accent) 12%,transparent)}
+.app-install-card.selected::before{content:"";position:absolute;inset:-1px;border-radius:20px;padding:1px;background:linear-gradient(120deg,color-mix(in srgb,var(--oobe-accent) 80%,white),transparent 45%,color-mix(in srgb,var(--oobe-accent) 55%,transparent));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.app-install-card{position:relative;overflow:hidden}
+.app-card-icon{box-shadow:0 10px 30px rgba(0,0,0,.22);transition:transform .25s ease,box-shadow .25s ease}
+.app-install-card:hover .app-card-icon{transform:translateY(-2px) rotate(-2deg);box-shadow:0 14px 34px color-mix(in srgb,var(--oobe-accent) 18%,transparent)}
+.app-card-icon.image-icon{background-color:rgba(255,255,255,.95);background-repeat:no-repeat;background-size:cover}
+.app-card-meta{display:inline-block;margin-top:7px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:color-mix(in srgb,var(--oobe-accent) 65%,#dce5f7);font-weight:700}
+.app-card-status{padding-top:4px}
+.install-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:24px}
+.install-hero .oobe-copy{margin-bottom:0}
+@keyframes oobeAura{from{transform:translate3d(-2%, -1%,0) scale(1)}to{transform:translate3d(3%,2%,0) scale(1.08)}}
+@media(prefers-reduced-motion:reduce){.oobe-screen::before,.oobe-screen::after{animation:none!important}}

@@ -7,6 +7,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+(function(){
+  try {
+    var setup = localStorage.getItem('jackosOobeComplete') !== 'true';
+    document.documentElement.dataset.jackosBoot = setup ? 'setup' : 'normal';
+  } catch(e) { document.documentElement.dataset.jackosBoot = 'setup'; }
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <title>JackOS v5 Beta 3</title>
@@ -15,59 +23,61 @@
 </head>
 <body>.
 
-<section id="startup" class="screen active">
-
-  <div id="main-text" class="fade-text">🐵<br>JackOS<br>v5 Beta 3</div>
-
-
-  <div id="popup" class="popup" style="display:none;">
-    <p>ACTIVATION ERROR! <br><br>This software has not been activated.</p>
-    <p>Please put in your product activation key below to successfully activate this software:</p>
-    <input type="text" id="activation-key" placeholder="Enter activation key">
+<section id="startup" class="screen active oobe-startup">
+  <div class="oobe-startup-bg"></div>
+  <div class="startup-shell">
     
+      <div id="main-text" class="fade-text">🐵<br>JackOS<br>v5 Beta 3</div>
     
-    <button onclick="Startup_checkKey()">
-Activate
-</button>
-
-<button
-onclick="Startup_continueWithoutActivation()"
-class="btn ghost"
-style="margin-top:8px;"
->
-Continue Without Activating
-</button>
-  
+    <div id="popup" class="activation-card" style="display:none;">
+      <div class="eyebrow">JACKOS SETUP</div>
+      <h1>Activate your copy of JackOS</h1>
+      <p class="oobe-muted">Enter your activation key to unlock the edition and continue setup.</p>
+      <label class="oobe-field-label" for="activation-key">Activation key</label>
+      <input type="text" id="activation-key" class="oobe-input" placeholder="XXXXX-XXXXX-XXXXX" autocomplete="off">
+      <div id="activationMsg" class="oobe-message" aria-live="polite"></div>
+      <button class="btn oobe-primary" onclick="Startup_checkKey()">Activate JackOS <span>→</span></button>
+      <button onclick="Startup_continueWithoutActivation()" class="btn ghost oobe-secondary">Continue without activating</button>
+    </div>
   </div>
 </section>
 
 <!-- Setup -->
-<section id="setup" class="screen">
-  <div class="setup-card">
-    <div class="setup-header">
-      <div class="logo">🧩</div>
-      <div>
-        <h2>Welcome to JackOS Setup</h2>
-        <div style="opacity:.8; font-size:14px;">Add at least one account, then choose one or more admins.</div>
+<section id="setup" class="screen oobe-screen">
+  <div class="oobe-shell account-shell">
+    <div class="oobe-topline">
+      <div class="oobe-brand"><img src="JackOS-Logo.png" alt=""> JackOS</div>
+      <div id="setupEditionBadge" class="edition-badge">Home</div>
+    </div>
+    <div class="oobe-progress"><span class="active"></span><span></span><span></span><span></span><span></span></div>
+    <div class="oobe-copy">
+      <div class="eyebrow">STEP 2 OF 5</div>
+      <h1>Who will use this PC?</h1>
+      <p>Set up the people who can sign in to JackOS. You can add more accounts later in Settings.</p>
+    </div>
+    <div class="account-layout">
+      <div class="oobe-card account-form-card">
+        <div class="card-heading"><span class="card-icon">👤</span><div><h3>Add an account</h3><p>Create a password-protected user.</p></div></div>
+        <div class="oobe-grid">
+          <input id="su-name" class="oobe-input" type="text" placeholder="Account name (e.g. Jack)" autocomplete="off"/>
+          <input id="su-pass" class="oobe-input" type="password" placeholder="Password" autocomplete="new-password"/>
+        </div>
+        <input id="su-pass2" class="oobe-input" type="password" placeholder="Confirm password" autocomplete="new-password"/>
+        <div id="setupMsg" class="oobe-message" aria-live="polite"></div>
+        <div class="oobe-button-row">
+          <button class="btn oobe-primary" onclick="Setup_addUser()">Add account</button>
+          <button class="btn ghost" onclick="Setup_addGuest()">Add Guest</button>
+          <button class="btn ghost" onclick="Setup_clearInputs()">Clear</button>
+        </div>
+      </div>
+      <div class="oobe-card">
+        <div class="card-heading"><span class="card-icon">◎</span><div><h3>Your accounts</h3><p>Choose which accounts are administrators.</p></div></div>
+        <div class="setup-list" id="setupList"></div>
       </div>
     </div>
-    <div class="setup-row">
-      <input id="su-name" type="text" placeholder="Account name (e.g. Jack)" autocomplete="off"/>
-      <input id="su-pass" type="password" placeholder="Password" autocomplete="new-password"/>
-    </div>
-    <div class="setup-row single">
-      <input id="su-pass2" type="password" placeholder="Confirm password" autocomplete="new-password"/>
-    </div>
-    <div class="setup-actions">
-      <button class="btn" onclick="Setup_addUser()">Add account</button>
-      <button class="btn ghost" onclick="Setup_addGuest()">Add Guest account</button>
-      <button class="btn ghost" onclick="Setup_clearInputs()">Clear</button>
-      <div id="setupMsg" style="margin-left:auto; color:#cfe9ff; min-height:22px;"></div>
-    </div>
-    <div class="setup-list" id="setupList"></div>
-    <div class="setup-actions" style="justify-content:flex-end;">
-      <button class="btn ghost" onclick="show('login', true)">Back to Login</button>
-      <button class="btn" id="setupFinishBtn" onclick="Setup_finish()" disabled>Finish & Continue</button>
+    <div class="oobe-footer">
+      <button class="btn ghost" onclick="show('login', true)">Back</button>
+      <button class="btn oobe-primary" id="setupFinishBtn" onclick="Setup_finish()" disabled>Continue <span>→</span></button>
     </div>
   </div>
 </section>
@@ -87,6 +97,82 @@ Continue Without Activating
 </section>
 
 <!-- Transition -->
+<section id="editionReveal" class="screen oobe-screen">
+  <div class="edition-reveal">
+    <div class="reveal-orb"></div>
+    <div id="revealIcon" class="reveal-icon">🏠</div>
+    <div class="eyebrow">YOUR EDITION IS READY</div>
+    <h1 id="revealTitle">JackOS Home</h1>
+    <p id="revealTagline">Fast. Simple. Reliable.</p>
+    <div id="revealEditionBadge" class="edition-badge">HOME</div>
+  </div>
+</section>
+
+<section id="welcome" class="screen oobe-screen">
+  <div class="oobe-shell centered-shell">
+    <div id="welcomeIcon" class="hero-icon">🏠</div>
+    <div class="eyebrow">WELCOME TO JACKOS</div>
+    <h1>Welcome to JackOS</h1>
+    <div id="welcomeBadge" class="edition-badge">HOME</div>
+    <p id="welcomeDescription" class="hero-description"></p>
+    <button class="btn oobe-primary hero-button" onclick="JackOS_OOBE_begin()">Get Started <span>→</span></button>
+  </div>
+</section>
+
+<section id="editionConfig" class="screen oobe-screen">
+  <div class="oobe-shell">
+    <div class="oobe-topline">
+      <div class="oobe-brand"><img src="JackOS-Logo.png" alt=""> JackOS</div>
+      <div id="configEditionBadge" class="edition-badge">HOME</div>
+    </div>
+    <div class="oobe-progress"><span class="done"></span><span class="done"></span><span class="active"></span><span></span><span></span></div>
+    <div class="oobe-copy">
+      <div class="eyebrow">YOUR JACKOS EDITION</div>
+      <h1 id="configTitle">Everything you need.</h1>
+      <p id="configSubtitle">Here’s what is included with your edition.</p>
+    </div>
+    <div id="configCards" class="feature-grid"></div>
+    <div class="oobe-footer">
+      <button class="btn ghost" onclick="JackOS_OOBE_backToAccounts()">Back</button>
+      <button class="btn oobe-primary" onclick="JackOS_OOBE_continueFromConfig()">Continue <span>→</span></button>
+    </div>
+  </div>
+</section>
+
+<section id="appInstall" class="screen oobe-screen">
+  <div class="oobe-shell">
+    <div class="oobe-topline">
+      <div class="oobe-brand"><img src="JackOS-Logo.png" alt=""> JackOS</div>
+      <div id="installEditionBadge" class="edition-badge">PRIVATE</div>
+    </div>
+    <div class="oobe-progress"><span class="done"></span><span class="done"></span><span class="done"></span><span class="active"></span><span></span></div>
+    <div class="oobe-copy">
+      <div class="eyebrow">PERSONALISE YOUR APPS</div>
+      <h1>Install apps before first login</h1>
+      <p>Choose the apps you want ready on each account. You can change this later in the App Store.</p>
+    </div>
+    <div id="installStatus" class="oobe-message" aria-live="polite"></div>
+    <div id="installAppsGrid" class="app-install-grid">
+      <div class="loading-state"><span class="spinner"></span><span>Loading available apps…</span></div>
+    </div>
+    <div class="oobe-footer">
+      <button class="btn ghost" onclick="JackOS_OOBE_backToConfig()">Back</button>
+      <button id="installContinueBtn" class="btn oobe-primary" onclick="JackOS_OOBE_installSelected()">Install selected apps <span>→</span></button>
+    </div>
+  </div>
+</section>
+
+<section id="finalSetup" class="screen oobe-screen">
+  <div class="oobe-shell final-shell centered-shell">
+    <div class="final-logo"><img src="JackOS-Logo.png" alt=""></div>
+    <div class="eyebrow">FINALISING YOUR PC</div>
+    <h1>Preparing JackOS</h1>
+    <p class="oobe-muted">A few final touches, then you’ll be ready to sign in.</p>
+    <div id="finalChecklist" class="final-checklist"></div>
+    <div class="final-progress"><span id="finalProgressBar"></span></div>
+  </div>
+</section>
+
 <section id="transition" class="screen">
   <div class="trans-card">
     <div class="trans-title" id="transTitle">Welcome</div>
@@ -1135,6 +1221,7 @@ Back
 <script src="JackOS-SecurityQuestions.js"></script>
 <script src="JackOS-Backup.js"></script>
 <script src="JackOS-Sandbox.js"></script>
+<script src="JackOS-Setup-Helper.js"></script>
 
 </body>
 </html>
