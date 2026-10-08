@@ -8,11 +8,32 @@
 <html lang="en">
 <head>
 <script>
+(function () {
+    const setupComplete =
+        localStorage.getItem("JackOS.SetupComplete") === "true";
+
+    if (setupComplete) {
+        document.documentElement.classList.add("jackos-normal-boot");
+    } else {
+        document.documentElement.classList.add("jackos-setup-boot");
+    }
+})();
+  // <script>
 (function(){
+  // Boot decision intentionally mirrors the original JackOS startup flow.
+  // This runs before the stylesheet/page paints:
+  // activated + existing users = normal black boot
+  // otherwise = setup boot with the aura background.
   try {
-    var setup = localStorage.getItem('jackosOobeComplete') !== 'true';
-    document.documentElement.dataset.jackosBoot = setup ? 'setup' : 'normal';
-  } catch(e) { document.documentElement.dataset.jackosBoot = 'setup'; }
+    var activated = localStorage.getItem('jackosActivated') === 'true';
+    var users = [];
+    try { users = JSON.parse(localStorage.getItem('jackosUsers') || '[]'); } catch (_) {}
+    var hasUsers = Array.isArray(users) && users.length > 0;
+    document.documentElement.dataset.jackosBoot =
+      (activated && hasUsers) ? 'normal' : 'setup';
+  } catch (_) {
+    document.documentElement.dataset.jackosBoot = 'setup';
+  }
 })();
 </script>
 <meta charset="UTF-8">

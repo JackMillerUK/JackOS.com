@@ -21,81 +21,48 @@ if(id==='login'){ Login_resetFields(); Login_applyUser(); applyLoginWallpaper();
 }
 // Startup
 const Startup_mainText=document.getElementById('main-text');
-window.addEventListener('load', ()=>{
-  setTimeout(()=>Startup_mainText && (Startup_mainText.style.opacity=1), 200);
-  setTimeout(()=>{
-    if(Startup_mainText) Startup_mainText.style.opacity=0;
-    setTimeout(()=>{
-      const activated = localStorage.getItem('jackosActivated')==='true';
-      Users_migrate();
-      if(activated){
-        if(typeof JackOS_OOBE_resume==='function' && !JackOS_OOBE_isComplete()){
-          JackOS_OOBE_resume();
-        }else if(Users_hasAny()){
-          show('login', true);
-        }else if(typeof JackOS_OOBE_start==='function'){
-          JackOS_OOBE_start();
-        }else{
-          show('setup', true);
-        }
-      }else{
-        const popup=document.getElementById('popup');
-        if(popup) popup.style.display='block';
-      }
-    }, 1200);
-  }, 2200);
-});
+window.addEventListener('load', ()=>{ setTimeout(()=>Startup_mainText && (Startup_mainText.style.opacity=1), 200); setTimeout(()=>{ if(Startup_mainText) Startup_mainText.style.opacity=0; setTimeout(()=>{ const activated = localStorage.getItem('jackosActivated')==='true'; Users_migrate(); if(activated){ if(Users_hasAny()) show('login', true); else if(typeof JackOS_OOBE_start==='function') JackOS_OOBE_start(); else show('setup', true); } else { const popup=document.getElementById('popup'); if(popup) popup.style.display='block'; } }, 1200); }, 2200); });
 async function Startup_checkKey(){
   const input=document.getElementById('activation-key');
   const msg=document.getElementById('activationMsg');
   const key=(input?.value||'').trim();
   const setMsg=(text,kind='')=>{ if(msg){ msg.textContent=text; msg.className='oobe-message '+kind; } };
-
   if(!key){ setMsg('Enter your activation key.','error'); input?.focus(); return; }
   setMsg('Checking your activation key…','loading');
-
   try{
     const response=await fetch('../JackOS-Server-Files/Activation-Keys/Activation.json',{cache:'no-store'});
     if(!response.ok) throw new Error('The activation service is unavailable right now.');
     const data=await response.json();
     const licence=(data.keys||[]).find(item=>item.key===key);
     if(!licence){ setMsg('That activation key is not valid. Check it and try again.','error'); return; }
-
     localStorage.setItem('jackosActivated','true');
     localStorage.setItem('jackosActivationKey',licence.key);
     localStorage.setItem('jackosEdition',licence.edition);
     localStorage.setItem('jackosUpgradeAllowed',String(!!licence.upgrade));
     localStorage.setItem('jackosActivationDate',new Date().toISOString());
     localStorage.removeItem('jackosOobeComplete');
-    localStorage.setItem('jackosOobeStage','editionReveal');
+    localStorage.removeItem('jackosOobeStage');
     JACKOS_EDITION=licence.edition;
-
-    if(typeof JackOS_OOBE_start==='function'){
-      JackOS_OOBE_start();
-    }else{
-      show(Users_hasAny()?'login':'setup',true);
-    }
-  }catch(error){
-    setMsg(error?.message||'Activation failed. Please try again.','error');
-  }
+    Users_migrate();
+    if(Users_hasAny()) show('login',true);
+    else if(typeof JackOS_OOBE_start==='function') JackOS_OOBE_start();
+    else show('setup',true);
+  }catch(error){ setMsg(error?.message||'Activation failed. Please try again.','error'); }
 }
-
 function Startup_continueWithoutActivation(){
-  const ok=window.confirm(
-    'JackOS can continue in limited Home mode without activation.\n\nServer features, App Store access and cloud features will remain unavailable.\n\nContinue?'
-  );
+  const ok=window.confirm('JackOS can continue in limited Home mode without activation.\n\nServer features, App Store access and cloud features will remain unavailable.\n\nContinue?');
   if(!ok) return;
-
   localStorage.setItem('jackosActivated','false');
   localStorage.setItem('jackosEdition','Home');
-  localStorage.setItem('jackosOobeStage','editionReveal');
+  localStorage.removeItem('jackosOobeStage');
   localStorage.removeItem('jackosActivationKey');
   localStorage.removeItem('jackosActivationDate');
   localStorage.removeItem('jackosUpgradeAllowed');
   JACKOS_EDITION='Home';
-
-  if(typeof JackOS_OOBE_start==='function') JackOS_OOBE_start();
-  else show(Users_hasAny()?'login':'setup',true);
+  Users_migrate();
+  if(Users_hasAny()) show('login',true);
+  else if(typeof JackOS_OOBE_start==='function') JackOS_OOBE_start();
+  else show('setup',true);
 }
 
 function Desktop_toggleStartMenu(){ const sm=document.getElementById('startMenu'); if(sm){ sm.classList.toggle('show'); } }

@@ -124,6 +124,15 @@
 
   window.JackOS_OOBE_resume=function(){
     applyEditionClass();
+    try{
+      Users_migrate();
+      if(Users_hasAny()){
+        localStorage.removeItem(STAGE_KEY);
+        localStorage.removeItem(OOBE_KEY);
+        show('login',true);
+        return;
+      }
+    }catch(e){}
     const stage=localStorage.getItem(STAGE_KEY)||'editionReveal';
     switch(stage){
       case 'welcome': JackOS_OOBE_showWelcome(); break;
