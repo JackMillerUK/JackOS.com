@@ -1,19 +1,230 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>JackOS</title>
-<link rel="icon" type="image/png" href="JackOS-System-Files/JackOS-Logo.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#050505">
+  <title>JackOS — A Modern Web OS</title>
+  <link rel="icon" type="image/png" href="JackOS-System-Files/JackOS-Logo.png">
+  <meta name="description" content="JackOS is a custom browser-based operating system built from the ground up.">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="bg-grid"></div>
+  <div class="orb orb-one"></div>
+  <div class="orb orb-two"></div>
 
-<h1> JackOS Site Coming Soon </h1>
+  <header class="nav">
+    <a class="brand" href="#home" aria-label="JackOS home">
+      <span class="brand-mark">🐵</span>
+      <span>JackOS</span>
+    </a>
 
-<a href="JackOS-System-Files/JackOS.html">Launch JackOS</a>
-<p>The site is currently in development, but you can still use JackOS by clicking the link above. </p>
+    <nav class="nav-links" aria-label="Primary navigation">
+      <a href="#home" class="active">Home</a>
+      <a href="#about">About</a>
+      <a href="#features">Features</a>
+      <a href="#launch">Launch</a>
+    </nav>
 
+    <a class="nav-cta" href="#launch">Launch JackOS <span>↗</span></a>
+  </header>
 
+  <main id="home">
+    <section class="hero section">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="pulse"></span> The custom web operating system</div>
+        <h1>An OS built<br><span>for the web.</span></h1>
+        <p class="hero-text">
+          JackOS is a browser-based operating system experience designed from the ground up,
+          combining a polished desktop, first-run setup, security, apps, and a familiar OS workflow.
+        </p>
+        <div class="hero-actions">
+          <a class="button primary" href="#launch">Launch the latest version <span>→</span></a>
+          <a class="button secondary" href="#features">Explore JackOS</a>
+        </div>
+        <div class="hero-meta">
+          <div><strong>01</strong><span>Custom desktop</span></div>
+          <div><strong>02</strong><span>Guided setup</span></div>
+          <div><strong>03</strong><span>Browser-native</span></div>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-label="JackOS desktop preview">
+        <div class="window-glow"></div>
+        <div class="desktop-preview">
+          <div class="preview-topbar">
+            <div class="traffic"><i></i><i></i><i></i></div>
+            <span>JackOS</span>
+            <span class="top-status">● Online</span>
+          </div>
+
+          <div class="preview-body">
+            <aside class="preview-dock">
+              <div class="dock-logo">🐵</div>
+              <div class="dock-icon active">⌂</div>
+              <div class="dock-icon">▦</div>
+              <div class="dock-icon">◉</div>
+              <div class="dock-icon">⚙</div>
+            </aside>
+
+            <div class="preview-content">
+              <div class="preview-title">Welcome back.</div>
+              <div class="preview-subtitle">Your JackOS desktop, ready.</div>
+
+              <div class="preview-cards">
+                <div class="mini-card large">
+                  <span>System</span>
+                  <strong>JackOS</strong>
+                  <small>Ready to go</small>
+                </div>
+
+                <div class="mini-card">
+                  <span>Apps</span>
+                  <strong>12</strong>
+                  <small>Installed</small>
+                </div>
+
+                <div class="mini-card">
+                  <span>Security</span>
+                  <strong>✓</strong>
+                  <small>Protected</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="about" class="section split">
+      <div>
+        <div class="section-kicker">01 — THE IDEA</div>
+        <h2>More than a website.<br><span>A complete experience.</span></h2>
+      </div>
+
+      <div class="section-copy">
+        <p>
+          JackOS turns the browser into a full operating-system-style environment.
+          From the first boot to the desktop, every part is designed to feel intentional,
+          responsive, and distinctly JackOS.
+        </p>
+
+        <p>
+          The project brings together a custom boot sequence, account setup, editions,
+          app installation, security questions, login, desktop windows, and system UI.
+        </p>
+      </div>
+    </section>
+
+    <section id="features" class="section">
+      <div class="section-kicker">02 — WHAT'S INSIDE</div>
+
+      <div class="feature-heading">
+        <h2>Designed like an OS.<br><span>Delivered through your browser.</span></h2>
+        <p>
+          Everything is built around one continuous experience instead of a collection
+          of disconnected pages.
+        </p>
+      </div>
+
+      <div class="feature-grid">
+        <article class="feature-card feature-large">
+          <div class="feature-number">01</div>
+          <div class="feature-icon">⌘</div>
+          <h3>Custom Desktop</h3>
+          <p>
+            A dedicated desktop environment with windows, navigation, apps,
+            and system controls.
+          </p>
+          <div class="feature-line"></div>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-number">02</div>
+          <div class="feature-icon">✦</div>
+          <h3>First-Run Setup</h3>
+          <p>
+            A guided setup journey from activation to a finished JackOS installation.
+          </p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-number">03</div>
+          <div class="feature-icon">◈</div>
+          <h3>Multiple Editions</h3>
+          <p>
+            Private, Pro, and Elite experiences give the system room to grow.
+          </p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-number">04</div>
+          <div class="feature-icon">⌁</div>
+          <h3>Security</h3>
+          <p>
+            Built-in security steps and account protection are part of the OS experience.
+          </p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-number">05</div>
+          <div class="feature-icon">◌</div>
+          <h3>Browser Native</h3>
+          <p>
+            No traditional installer required. JackOS runs directly in a modern browser.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section id="launch" class="section launch-section">
+      <div class="launch-panel">
+        <div class="launch-aura"></div>
+
+        <div class="section-kicker">03 — LAUNCH</div>
+
+        <div class="launch-icon">🐵</div>
+
+        <h2>Ready to enter<br><span>JackOS?</span></h2>
+
+        <p>Open the latest JackOS build directly from this project.</p>
+
+        <a class="launch-button"
+           href="JackOS-System-Files/JackOS.html">
+          <span>Launch The Latest Version Of JackOS</span>
+          <span class="launch-arrow">→</span>
+        </a>
+
+        <div class="launch-note">
+          Runs in your browser · Latest project build
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-brand"><span>🐵</span> JackOS</div>
+    <span>Built for the web. Built from the ground up.</span>
+    <a href="#home">Back to top ↑</a>
+  </footer>
+
+  <script>
+    const links = document.querySelectorAll('.nav-links a');
+    const sections = [...document.querySelectorAll('main section[id]')];
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          links.forEach(link => link.classList.toggle(
+            'active',
+            link.getAttribute('href') === '#' + entry.target.id
+          ));
+        }
+      });
+    }, { rootMargin: '-35% 0px -55% 0px' });
+
+    sections.forEach(section => observer.observe(section));
+  </script>
 </body>
 </html>
