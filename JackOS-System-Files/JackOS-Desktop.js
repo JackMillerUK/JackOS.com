@@ -1,7 +1,134 @@
 //JackOS-Desktop.js
 // ===== Desktop =====
 
-const SCREENS=['startup','editionReveal','welcome','setup','editionConfig','appInstall','finalSetup','login','transition','desktop'];
+const SCREENS=[
+  'startup',
+
+  'cloudSyncPrompt',
+  'cloudSyncPassword',
+  'cloudSyncReady',
+
+  'editionReveal',
+  'welcome',
+  'setup',
+  'editionConfig',
+  'appInstall',
+  'finalSetup',
+  'login',
+  'transition',
+  'desktop'
+];
+async function JackOS_BackToActivation(){
+
+  const ok =
+    confirm(
+
+      "Return to Activation?\n\n" +
+
+      "All setup progress, cloud sync data and accounts will be removed."
+
+    );
+
+  if(!ok)
+    return;
+
+  try{
+
+    await Backup_clearOPFS();
+
+  }catch(error){
+
+    console.error(error);
+
+  }
+
+  localStorage.removeItem(
+    'jackosActivated'
+  );
+
+  localStorage.removeItem(
+    'jackosActivationKey'
+  );
+
+  localStorage.removeItem(
+    'jackosEdition'
+  );
+
+  localStorage.removeItem(
+    'jackosUpgradeAllowed'
+  );
+
+  localStorage.removeItem(
+    'jackosActivationDate'
+  );
+
+  localStorage.removeItem(
+    'jackosCloudSyncPath'
+  );
+
+  localStorage.removeItem(
+    'jackosUsers'
+  );
+
+  localStorage.removeItem(
+    'jackosOobeStage'
+  );
+
+  localStorage.removeItem(
+    'jackosOobeComplete'
+  );
+
+  location.reload();
+
+}
+function JackOS_UpdateBackButton(){
+
+  const btn =
+    document.getElementById(
+      'backToActivationBtn'
+    );
+
+  if(!btn)
+    return;
+
+  const stage =
+    localStorage.getItem(
+      'jackosOobeStage'
+    );
+
+  const complete =
+    localStorage.getItem(
+      'jackosOobeComplete'
+    ) === 'true';
+
+  /*
+    Hidden before activation.
+  */
+
+  if(
+    !JackOS_IsActivated()
+  ){
+    btn.style.display='none';
+    return;
+  }
+
+  /*
+    Hidden forever once Final Setup
+    starts or setup completes.
+  */
+
+  if(
+    stage === 'final'
+    ||
+    complete
+  ){
+    btn.style.display='none';
+    return;
+  }
+
+  btn.style.display='block';
+
+}
 function show(id, fade=false){ const target=document.getElementById(id); if(!target) return; if(fade){ const f=document.getElementById('fadeOverlay'); f.classList.add('show'); setTimeout(()=>{ SCREENS.forEach(s=>{const el=document.getElementById(s); if(el) el.classList.remove('active');}); target.classList.add('active'); setTimeout(()=>f.classList.remove('show'), 250); },220); } else { SCREENS.forEach(s=>{const el=document.getElementById(s); if(el) el.classList.remove('active');}); target.classList.add('active'); }
   
 
@@ -18,10 +145,14 @@ if(id==='desktop'){
 if(id==='login'){ Login_resetFields(); Login_applyUser(); applyLoginWallpaper(); }
   if(id==='setup'){ Setup_open(); applyWallpaperTo('setup', localStorage.getItem('jackosWallpaperData') || localStorage.getItem('jackosWallpaper') || '#000'); }
   if(id==='transition'){ applyWallpaperTo('transition', localStorage.getItem('jackosWallpaperData') || localStorage.getItem('jackosWallpaper') || '#000'); }
+JackOS_UpdateBackButton();
 }
 // Startup
 const Startup_mainText=document.getElementById('main-text');
 window.addEventListener('load', ()=>{ setTimeout(()=>Startup_mainText && (Startup_mainText.style.opacity=1), 200); setTimeout(()=>{ if(Startup_mainText) Startup_mainText.style.opacity=0; setTimeout(()=>{ const activated = localStorage.getItem('jackosActivated')==='true'; Users_migrate(); if(activated){ if(Users_hasAny()) show('login', true); else if(typeof JackOS_OOBE_start==='function') JackOS_OOBE_start(); else show('setup', true); } else { const popup=document.getElementById('popup'); if(popup) popup.style.display='block'; } }, 1200); }, 2200); });
+
+let CloudSyncInfo = null;
+
 async function Startup_checkKey(){
   const input=document.getElementById('activation-key');
   const msg=document.getElementById('activationMsg');
@@ -43,10 +174,37 @@ async function Startup_checkKey(){
     localStorage.removeItem('jackosOobeComplete');
     localStorage.removeItem('jackosOobeStage');
     JACKOS_EDITION=licence.edition;
-    Users_migrate();
-    if(Users_hasAny()) show('login',true);
-    else if(typeof JackOS_OOBE_start==='function') JackOS_OOBE_start();
-    else show('setup',true);
+    localStorage.setItem(
+  'jackosCloudSyncPath',
+  licence.cloudSync || ''
+);
+    CloudSyncInfo = {
+  licence,
+  activationUrl:
+    '../JackOS-Server-Files/Activation-Keys/Activation.json'
+};
+
+if(
+  licence.cloudSync
+){
+
+  show(
+    'cloudSyncPrompt',
+    true
+  );
+
+  return;
+
+}
+
+Users_migrate();
+
+if(Users_hasAny())
+  show('login',true);
+else if(typeof JackOS_OOBE_start==='function')
+  JackOS_OOBE_start();
+else
+  show('setup',true);
   }catch(error){ setMsg(error?.message||'Activation failed. Please try again.','error'); }
 }
 function Startup_continueWithoutActivation(){
@@ -64,7 +222,258 @@ function Startup_continueWithoutActivation(){
   else if(typeof JackOS_OOBE_start==='function') JackOS_OOBE_start();
   else show('setup',true);
 }
+function CloudSync_skip(){
 
+  Users_migrate();
+
+  if(
+    typeof JackOS_OOBE_start ===
+    'function'
+  ){
+    JackOS_OOBE_start();
+  }else{
+    show(
+      'setup',
+      true
+    );
+  }
+
+}
+
+function CloudSync_begin(){
+
+  show(
+    'cloudSyncPassword',
+    true
+  );
+
+}
+function CloudSync_backToPrompt(){
+
+  show(
+    'cloudSyncPrompt',
+    true
+  );
+
+}
+
+async function CloudSync_backToPassword(){
+
+  const ok =
+    confirm(
+      'Are you sure?\n\n' +
+      'All restored cloud data will be removed and you will return to the Cloud Sync screen.'
+    );
+
+  if(!ok)
+    return;
+
+  try{
+
+    localStorage.clear();
+
+    await Backup_clearOPFS();
+
+    localStorage.setItem(
+      'jackosActivated',
+      'true'
+    );
+
+    localStorage.setItem(
+      'jackosActivationKey',
+      CloudSyncInfo.licence.key
+    );
+
+    localStorage.setItem(
+      'jackosEdition',
+      CloudSyncInfo.licence.edition
+    );
+
+    localStorage.setItem(
+      'jackosUpgradeAllowed',
+      String(
+        !!CloudSyncInfo.licence.upgrade
+      )
+    );
+
+    localStorage.setItem(
+      'jackosActivationDate',
+      new Date().toISOString()
+    );
+
+    JACKOS_EDITION =
+      CloudSyncInfo.licence.edition;
+
+  }catch(error){
+
+    console.error(error);
+
+  }
+
+  show(
+    'cloudSyncPrompt',
+    true
+  );
+
+}
+function CloudSync_backToPrompt(){
+
+  const input =
+    document.getElementById(
+      'cloudSyncPasswordInput'
+    );
+
+  const msg =
+    document.getElementById(
+      'cloudSyncPasswordMsg'
+    );
+
+  if(input)
+    input.value='';
+
+  if(msg)
+    msg.textContent='';
+
+  show(
+    'cloudSyncPrompt',
+    true
+  );
+
+}
+
+function CloudSync_finish(){
+location.reload();
+  Users_migrate();
+
+  if(
+    Users_hasAny()
+  ){
+
+    show(
+      'login',
+      true
+    );
+
+  }else if(
+    typeof JackOS_OOBE_start
+    ===
+    'function'
+  ){
+
+    JackOS_OOBE_start();
+
+  }else{
+
+    show(
+      'setup',
+      true
+    );
+
+  }
+
+}
+async function CloudSync_restore(){
+
+  const msg =
+    document.getElementById(
+      'cloudSyncPasswordMsg'
+    );
+
+  const password =
+    document.getElementById(
+      'cloudSyncPasswordInput'
+    ).value;
+
+  if(
+    !password
+  ){
+
+    msg.textContent =
+      'Enter a password.';
+
+    return;
+
+  }
+
+  try{
+
+    msg.textContent =
+      'Downloading backup...';
+
+    const activationUrl =
+  new URL(
+    '../JackOS-Server-Files/Activation-Keys/Activation.json',
+    window.location.href
+  );
+
+const syncUrl =
+  new URL(
+    CloudSyncInfo.licence.cloudSync,
+    activationUrl
+  );
+
+    const response =
+      await fetch(
+        syncUrl.href,
+        {
+          cache:'no-store'
+        }
+      );
+
+    if(
+      !response.ok
+    ){
+      throw new Error(
+        'Cloud backup missing.'
+      );
+    }
+
+    const blob =
+      await response.blob();
+
+    const file =
+      new File(
+        [blob],
+        'CloudSync.zip',
+        {
+          type:
+          'application/zip'
+        }
+      );
+
+    msg.textContent =
+      'Restoring JackOS...';
+window.JACKOS_CLOUD_SYNC_MODE =
+  true;
+
+try{
+
+  await Backup_restoreCloud(
+    file,
+    password
+  );
+
+}finally{
+
+  window.JACKOS_CLOUD_SYNC_MODE =
+    false;
+
+}
+
+    show(
+      'cloudSyncReady',
+      true
+    );
+
+  }catch(error){
+
+    msg.textContent =
+      error.message ||
+      'Cloud sync failed.';
+
+  }
+
+}
 function Desktop_toggleStartMenu(){ const sm=document.getElementById('startMenu'); if(sm){ sm.classList.toggle('show'); } }
 function Desktop_hideStartMenu(){ const sm=document.getElementById('startMenu'); if(sm){ sm.classList.remove('show'); } }
 document.addEventListener('click', (e)=>{ const sm=document.getElementById('startMenu'); const btn=e.target.closest('.start-btn'); const insideMenu=e.target.closest('#startMenu'); if(sm && !btn && !insideMenu){ sm.classList.remove('show'); } });

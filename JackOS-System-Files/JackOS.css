@@ -1635,10 +1635,81 @@ html[data-jackos-boot="normal"] .oobe-startup-bg{display:none;}
 .oobe-screen::after{animation-duration:22s;animation-direction:alternate-reverse;opacity:.48;transform:scale(1.08)}
 .oobe-screen > *{position:relative;z-index:1}
 .oobe-shell{position:relative;overflow:visible}
-
 .app-install-card{animation:cardIn .55s cubic-bezier(.2,.8,.2,1) both;backdrop-filter:blur(22px);box-shadow:0 18px 60px rgba(0,0,0,.18)}
 .app-install-card:hover{transform:translateY(-4px) scale(1.005);border-color:color-mix(in srgb,var(--oobe-accent) 42%,rgba(255,255,255,.14));box-shadow:0 22px 70px color-mix(in srgb,var(--oobe-accent) 12%,transparent)}
-.app-install-card.selected::before{content:"";position:absolute;inset:-1px;border-radius:20px;padding:1px;background:linear-gradient(120deg,color-mix(in srgb,var(--oobe-accent) 80%,white),transparent 45%,color-mix(in srgb,var(--oobe-accent) 55%,transparent));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+
+
+.app-install-card.selected::before{content:"";position:absolute;inset:-1px;border-radius:20px;padding:1px;background:linear-gradient(120deg,color-mix(in srgb,var(--oobe-accent) 80%,white),transparent 45%,color-mix(in srgb,var(--oobe-accent) 55%,transparent));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;pointer-events:none}
+
+#backToActivationBtn{
+display:none;
+  position:fixed;
+
+  top:16px;
+  left:16px;
+
+  z-index:99999;
+
+  padding:10px 16px;
+
+  border:none;
+
+  border-radius:999px;
+
+  background:
+    rgba(
+      20,
+      20,
+      25,
+      .85
+    );
+
+  color:white;
+
+  cursor:pointer;
+
+  backdrop-filter:
+    blur(20px);
+
+  -webkit-backdrop-filter:
+    blur(20px);
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      .15
+    );
+
+  box-shadow:
+    0 10px 30px
+    rgba(
+      0,
+      0,
+      0,
+      .35
+    );
+
+  font-weight:600;
+
+}
+
+#backToActivationBtn:hover{
+
+  background:
+    rgba(
+      40,
+      40,
+      50,
+      .95
+    );
+
+}
+
+
+
 .app-install-card{position:relative;overflow:hidden}
 .app-card-icon{box-shadow:0 10px 30px rgba(0,0,0,.22);transition:transform .25s ease,box-shadow .25s ease}
 .app-install-card:hover .app-card-icon{transform:translateY(-2px) rotate(-2deg);box-shadow:0 14px 34px color-mix(in srgb,var(--oobe-accent) 18%,transparent)}

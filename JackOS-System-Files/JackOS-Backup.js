@@ -596,7 +596,13 @@ document.getElementById(
   "systemImportArea"
 ).style.display =
   "none";
-location.reload();
+if(
+  !window.JACKOS_CLOUD_SYNC_MODE
+){
+
+  location.reload();
+
+}
 
 
 
@@ -606,6 +612,90 @@ location.reload();
   
   
 
+
+}
+async function Backup_restoreCloud(
+  file,
+  password
+){
+
+  const zip =
+    await JSZip.loadAsync(
+      file
+    );
+
+  const manifestPath =
+    Object.keys(zip.files)
+    .find(
+      path =>
+        !zip.files[path].dir
+        &&
+        path
+          .split('/')
+          .pop()
+          .toLowerCase()
+        ===
+        'manifest.json'
+    );
+
+  if(
+    !manifestPath
+  ){
+    throw new Error(
+      'Invalid cloud backup.'
+    );
+  }
+
+  const manifest =
+    JSON.parse(
+      await zip
+      .file(manifestPath)
+      .async('text')
+    );
+
+  const hash =
+    await Backup_sha256(
+      password +
+      manifest.protection.salt
+        .join('-')
+    );
+
+  if(
+    hash !==
+    manifest.protection.passwordHash
+  ){
+    throw new Error(
+      'Incorrect password.'
+    );
+  }
+
+  const realConfirm =
+    window.confirm;
+
+  const realPrompt =
+    window.prompt;
+
+  try{
+
+    window.prompt =
+      ()=>password;
+
+    window.confirm =
+      ()=>true;
+
+    await Backup_restore(
+      file
+    );
+
+  }finally{
+
+    window.prompt =
+      realPrompt;
+
+    window.confirm =
+      realConfirm;
+
+  }
 
 }
 function exportWallpaperSettings(){ return {wallpaper:localStorage.getItem('jackosWallpaper'),wallpaperData:localStorage.getItem('jackosWallpaperData')}; }

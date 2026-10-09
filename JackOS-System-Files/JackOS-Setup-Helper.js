@@ -1,4 +1,4 @@
-// JackOS-Onboarding.js
+// JackOS-Setup-Helper.js
 // JackOS v5 first-run experience. Extends the existing setup/account/app architecture.
 
 (function(){
@@ -498,3 +498,16 @@
     if(JackOS_IsActivated()) JackOS_OOBE_resume();
   };
 })();
+window.JackOS_OOBE_backToReveal=
+function(){
+
+  setStage(
+    'editionReveal'
+  );
+
+  show(
+    'editionReveal',
+    true
+  );
+
+};
