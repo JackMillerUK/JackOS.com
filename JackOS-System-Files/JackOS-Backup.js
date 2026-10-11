@@ -160,20 +160,44 @@ async function System_export(
 
     });
 
-    const localStorageDump =
-      {};
+    const localStorageDump = {};
 
-    for(
-      let i=0;
-      i<localStorage.length;
-      i++
-    ){
-      const key =
-        localStorage.key(i);
+const BLOCKED_BACKUP_KEYS = [
 
-      localStorageDump[key] =
-        localStorage.getItem(key);
-    }
+  // Activation
+
+  "jackosActivationKey",
+  "jackosActivationData",
+  "jackosActivated",
+  "jackosUpgradeAllowed",
+
+  // Block system
+
+  "jackosBlockUnlockUntil",
+  "jackosLocked",
+  "jackosBlockAttempts"
+
+];
+
+for(
+  let i = 0;
+  i < localStorage.length;
+  i++
+){
+  const key =
+    localStorage.key(i);
+
+  if(
+    BLOCKED_BACKUP_KEYS.includes(
+      key
+    )
+  ){
+    continue;
+  }
+
+  localStorageDump[key] =
+    localStorage.getItem(key);
+}
 
     const manifest = {
 
@@ -512,7 +536,14 @@ await Backup_clearOPFS();
 try{
   await navigator.storage.persist?.();
 }catch(e){}
+delete localData.jackosActivationKey;
+delete localData.jackosActivationData;
+delete localData.jackosActivated;
+delete localData.jackosUpgradeAllowed;
 
+delete localData.jackosBlockUnlockUntil;
+delete localData.jackosLocked;
+delete localData.jackosBlockAttempts;
 /* Recreate JackOSDrive after wipe */
 try{
   const root =
@@ -526,6 +557,14 @@ try{
 
 localStorage.clear();
 
+/*
+Restore edition first.
+Edition belongs to the backup.
+*/
+localStorage.setItem(
+  "jackosEdition",
+  importedEdition
+);
 
 for(
   const [key,value]
@@ -533,6 +572,14 @@ for(
     localData
   )
 ){
+
+  // Never restore activation data
+  if(
+    key === "jackosEdition"
+  ){
+    continue;
+  }
+
   localStorage.setItem(
     key,
     value
