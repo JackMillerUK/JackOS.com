@@ -1,53 +1,51 @@
 //JackOS-Sandbox.js
 // JackOS Sandbox Emulator FOR PRO AND ELITE ONLY
 let SE_CURRENT_VERSION = null;
+let SE_RUN_ID = 0;
+let SE_LOAD_TIMEOUT = null;
 
 function SE_makeReadOnlySandboxGuard(){
   return `
     <script>
       (function(){
         try {
-          const protectStorage = (storage, fallback) => {
-            const base = storage || fallback;
-            return {
+          const makeVolatileStorage = () => {
+            const values = new Map();
+            const storage = {
               getItem(key){
-                try { return base.getItem(key); }
-                catch(e) { return null; }
+                key = String(key);
+                return values.has(key) ? values.get(key) : null;
               },
-              setItem(){ return undefined; },
-              removeItem(){ return undefined; },
-              clear(){ return undefined; },
+              setItem(key, value){ values.set(String(key), String(value)); },
+              removeItem(key){ values.delete(String(key)); },
+              clear(){ values.clear(); },
               key(index){
-                try { return base.key(index); }
-                catch(e) { return null; }
+                return Array.from(values.keys())[Number(index)] ?? null;
               },
               get length(){
-                try { return base.length || 0; }
-                catch(e) { return 0; }
+                return values.size;
               }
             };
+            return new Proxy(storage, {
+              get(target, property, receiver){
+                if (Reflect.has(target, property)) return Reflect.get(target, property, receiver);
+                return values.get(String(property));
+              },
+              set(target, property, value){
+                if (Reflect.has(target, property)) return false;
+                values.set(String(property), String(value));
+                return true;
+              },
+              ownKeys(target){ return [...new Set([...Reflect.ownKeys(target), ...values.keys()])]; },
+              getOwnPropertyDescriptor(target, property){
+                return Reflect.getOwnPropertyDescriptor(target, property) ||
+                  (values.has(String(property)) ? { configurable: true, enumerable: true, writable: true, value: values.get(String(property)) } : undefined);
+              }
+            });
           };
 
-          const liveLocal = window.localStorage || null;
-          const liveSession = window.sessionStorage || null;
-
-          const readOnlyLS = protectStorage(liveLocal, {
-            getItem(){ return null; },
-            setItem(){ return undefined; },
-            removeItem(){ return undefined; },
-            clear(){ return undefined; },
-            key(){ return null; },
-            get length(){ return 0; }
-          });
-
-          const readOnlySS = protectStorage(liveSession, {
-            getItem(){ return null; },
-            setItem(){ return undefined; },
-            removeItem(){ return undefined; },
-            clear(){ return undefined; },
-            key(){ return null; },
-            get length(){ return 0; }
-          });
+          const readOnlyLS = makeVolatileStorage();
+          const readOnlySS = makeVolatileStorage();
 
           Object.defineProperty(window, 'localStorage', {
             configurable: true,
@@ -59,12 +57,6 @@ function SE_makeReadOnlySandboxGuard(){
             get: () => readOnlySS
           });
 
-          if (Storage && Storage.prototype) {
-            const noWrite = function(){ return undefined; };
-            Object.defineProperty(Storage.prototype, 'setItem', { configurable: true, value: noWrite });
-            Object.defineProperty(Storage.prototype, 'removeItem', { configurable: true, value: noWrite });
-            Object.defineProperty(Storage.prototype, 'clear', { configurable: true, value: noWrite });
-          }
         } catch(e) {}
 
         try {
@@ -153,7 +145,13 @@ function SE_makeReadOnlySandboxGuard(){
 }
 
 async function SE_run(path){
+  const runId = ++SE_RUN_ID;
+  if(SE_LOAD_TIMEOUT){
+    clearTimeout(SE_LOAD_TIMEOUT);
+    SE_LOAD_TIMEOUT = null;
+  }
 
+  if(!window.SE_Data || !Array.isArray(window.SE_Data.versions)) return;
   const version =
     window.SE_Data.versions.find(
       v => v.pathway === path
@@ -215,8 +213,16 @@ async function SE_run(path){
     "no-referrer"
   );
 
-  freshFrame.src =
-    "about:blank";
+  freshFrame.src = "about:blank";
+
+  let navigatingToVersion = false;
+  const hideLoader = () => {
+    if(runId !== SE_RUN_ID || !navigatingToVersion) return;
+    if(loader) loader.style.display = "none";
+  };
+
+  freshFrame.addEventListener("load", hideLoader);
+  freshFrame.addEventListener("error", hideLoader);
 
   if(oldFrame && oldFrame.parentNode)
     oldFrame.parentNode.replaceChild(
@@ -228,40 +234,43 @@ async function SE_run(path){
       freshFrame
     );
 
-  const pageUrl =
-    "../JackOS-Server-Files/Sandbox-Emulator/" +
-    path;
+  const pageUrl = new URL(
+    "../JackOS-Server-Files/Sandbox-Emulator/" + path,
+    document.baseURI
+  );
+
+  // A srcdoc document otherwise resolves relative URLs against JackOS itself.
+  const baseHref = pageUrl.href.replace(/&/g, "&amp;").replace(/\"/g, "&quot;");
+  const injection = `<base href="${baseHref}">${SE_makeReadOnlySandboxGuard()}`;
 
   try{
+    const response = await fetch(pageUrl.href);
+    if(!response.ok) throw new Error(`Failed to load ${pageUrl.href}: ${response.status}`);
+    const html = await response.text();
+    if(runId !== SE_RUN_ID) return;
 
-    const response =
-      await fetch(pageUrl);
-
-    const html =
-      await response.text();
-
-    freshFrame.srcdoc =
-      SE_makeReadOnlySandboxGuard() +
-      html;
+    const headMatch = /<head\b[^>]*>/i;
+    if(headMatch.test(html)){
+      navigatingToVersion = true;
+      freshFrame.srcdoc = html.replace(headMatch, match => match + injection);
+    }else{
+      const htmlMatch = /<html\b[^>]*>/i;
+      navigatingToVersion = true;
+      freshFrame.srcdoc = htmlMatch.test(html)
+        ? html.replace(htmlMatch, match => match + `<head>${injection}</head>`)
+        : `<!doctype html><html><head>${injection}</head><body>${html}</body></html>`;
+    }
 
   }catch(err){
-
-    freshFrame.src =
-      pageUrl;
+    if(runId !== SE_RUN_ID) return;
+    console.error("Sandbox version could not be loaded through srcdoc; opening the archived page directly.", err);
+    navigatingToVersion = true;
+    freshFrame.src = pageUrl.href;
 
   }
 
-  setTimeout(()=>{
-
-    if(loader)
-      loader.style.display =
-        "none";
-
-    if(sandboxWindow)
-      sandboxWindow.style.display =
-        "block";
-
-  },2500);
+  if(sandboxWindow) sandboxWindow.style.display = "block";
+  SE_LOAD_TIMEOUT = setTimeout(hideLoader, 15000);
 
 }
 
@@ -303,7 +312,7 @@ async function SE_open(){
 
     const response =
       await fetch(
-        "../JackOS-Server-Files/Sandbox-Emulator/JackOS-Versions.jkv"
+        "../JackOS-Server-Files/Sandbox-Emulator/JackOS-Versions.json"
       );
 
     if(!response.ok){
@@ -422,9 +431,16 @@ function SE_showVersion(name){
 
 function SE_close(){
 
-  document.getElementById(
+  ++SE_RUN_ID;
+  if(SE_LOAD_TIMEOUT){
+    clearTimeout(SE_LOAD_TIMEOUT);
+    SE_LOAD_TIMEOUT = null;
+  }
+
+  const loaderText = document.getElementById(
     "sandboxLoaderText"
-  ).textContent =
+  );
+  if(loaderText) loaderText.textContent =
     "Closing " +
     (
       SE_CURRENT_VERSION
@@ -433,39 +449,30 @@ function SE_close(){
     ) +
     "...";
 
-  document.getElementById(
+  const loader = document.getElementById(
     "sandboxLoader"
-  ).style.display =
-    "flex";
+  );
+  if(loader) loader.style.display = "flex";
 
   setTimeout(()=>{
-document.getElementById(
-  "sandboxLoader"
-).style.display = "flex";
-
-console.log("Loader shown");
     const frame =
       document.getElementById(
         "sandboxFrame"
       );
 
-    frame.src =
-      "about:blank";
+    if(frame) frame.src = "about:blank";
 
-    document.getElementById(
+    const sandboxWindow = document.getElementById(
       "sandboxWindow"
-    ).style.display =
-      "none";
+    );
+    if(sandboxWindow) sandboxWindow.style.display = "none";
 
-    document.getElementById(
-      "sandboxLoader"
-    ).style.display =
-      "none";
+    if(loader) loader.style.display = "none";
 
-    document.getElementById(
+    const settingsWindow = document.getElementById(
       "settingsWin"
-    ).style.display =
-      "block";
+    );
+    if(settingsWindow) settingsWindow.style.display = "block";
 
     if(SE_CURRENT_VERSION){
 

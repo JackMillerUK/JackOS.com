@@ -8,6 +8,11 @@ const SCREENS=[
   'cloudSyncPassword',
   'cloudSyncReady',
 
+  'blockedScreen',
+  'accessDeniedScreen',
+  'jackosLockedScreen',
+  'accessGrantedScreen',
+  
   'editionReveal',
   'welcome',
   'setup',
@@ -149,9 +154,30 @@ JackOS_UpdateBackButton();
 }
 // Startup
 const Startup_mainText=document.getElementById('main-text');
-window.addEventListener('load', ()=>{ setTimeout(()=>Startup_mainText && (Startup_mainText.style.opacity=1), 200); setTimeout(()=>{ if(Startup_mainText) Startup_mainText.style.opacity=0; setTimeout(()=>{ const activated = localStorage.getItem('jackosActivated')==='true'; Users_migrate(); if(activated){ if(Users_hasAny()) show('login', true); else if(typeof JackOS_OOBE_start==='function') JackOS_OOBE_start(); else show('setup', true); } else { const popup=document.getElementById('popup'); if(popup) popup.style.display='block'; } }, 1200); }, 2200); });
+window.addEventListener('load', ()=>{ setTimeout(()=>Startup_mainText && (Startup_mainText.style.opacity=1), 200); setTimeout(()=>{ if(Startup_mainText) Startup_mainText.style.opacity=0; setTimeout(()=>{ const activated = localStorage.getItem('jackosActivated')==='true';
+  
+  if(
+
+  localStorage.getItem(
+    'jackosLocked'
+  ) === 'true'
+
+){
+
+  show(
+    'jackosLockedScreen',
+    true
+  );
+
+  return;
+
+}
+  
+  Users_migrate(); if(activated){ if(Users_hasAny()) show('login', true); else if(typeof JackOS_OOBE_start==='function') JackOS_OOBE_start(); else show('setup', true); } else { const popup=document.getElementById('popup'); if(popup) popup.style.display='block'; } }, 1200); }, 2200); });
 
 let CloudSyncInfo = null;
+let JackOSCurrentActivation =
+  null;
 
 async function Startup_checkKey(){
   const input=document.getElementById('activation-key');
@@ -166,11 +192,42 @@ async function Startup_checkKey(){
     const data=await response.json();
     const licence=(data.keys||[]).find(item=>item.key===key);
     if(!licence){ setMsg('That activation key is not valid. Check it and try again.','error'); return; }
+    if(
+
+  typeof licence.block !==
+  'boolean'
+
+  ||
+
+  typeof licence[
+    'block-pass'
+  ] !== 'string'
+
+){
+
+  setMsg(
+    'Invalid activation key.',
+    'error'
+  );
+
+  return;
+
+}
     localStorage.setItem('jackosActivated','true');
     localStorage.setItem('jackosActivationKey',licence.key);
     localStorage.setItem('jackosEdition',licence.edition);
     localStorage.setItem('jackosUpgradeAllowed',String(!!licence.upgrade));
     localStorage.setItem('jackosActivationDate',new Date().toISOString());
+
+    JackOSCurrentActivation =
+  licence;
+  localStorage.setItem(
+  'jackosActivationData',
+  JSON.stringify(
+    licence
+  )
+);
+
     localStorage.removeItem('jackosOobeComplete');
     localStorage.removeItem('jackosOobeStage');
     JACKOS_EDITION=licence.edition;
@@ -183,6 +240,21 @@ async function Startup_checkKey(){
   activationUrl:
     '../JackOS-Server-Files/Activation-Keys/Activation.json'
 };
+if(
+
+  licence.block
+
+  &&
+
+  !JackOS_IsTemporarilyUnlocked()
+
+){
+
+  JackOS_ShowBlockedScreen();
+
+  return;
+
+}
 
 if(
   licence.cloudSync
@@ -206,6 +278,410 @@ else if(typeof JackOS_OOBE_start==='function')
 else
   show('setup',true);
   }catch(error){ setMsg(error?.message||'Activation failed. Please try again.','error'); }
+}
+function JackOS_IsTemporarilyUnlocked(){
+
+  const unlockUntil =
+    Number(
+      localStorage.getItem(
+        'jackosBlockUnlockUntil'
+      ) || 0
+    );
+
+  return Date.now() < unlockUntil;
+
+}
+
+function JackOS_Relock(){
+
+  const ok =
+    confirm(
+      'Re-block JackOS?\n\n' +
+      'You will immediately return to the blocked screen.'
+    );
+
+  if(!ok)
+    return;
+
+  localStorage.removeItem(
+    'jackosBlockUnlockUntil'
+  );
+
+  show(
+    'blockedScreen',
+    true
+  );
+
+}
+function JackOS_ShowBlockedScreen(){
+
+  document.getElementById(
+    'blockedPassword'
+  ).value='';
+
+  document.getElementById(
+    'blockedMessage'
+  ).textContent='';
+
+  show(
+    'blockedScreen',
+    true
+  );
+
+}
+function JackOS_BlockUnlock(){
+
+  const password =
+    document.getElementById(
+      'blockedPassword'
+    ).value;
+
+  const activation =
+    JSON.parse(
+      localStorage.getItem(
+        'jackosActivationData'
+      ) || 'null'
+    );
+
+  if(!activation)
+    return;
+
+  if(
+    password ===
+    activation['block-pass']
+  ){
+
+    localStorage.setItem(
+      'jackosBlockUnlockUntil',
+      String(
+        Date.now() +
+        (
+          15 *
+          60 *
+          1000
+        )
+      )
+    );
+
+    show(
+      'accessGrantedScreen',
+      true
+    );
+
+    setTimeout(()=>{
+
+      if(
+        activation.cloudSync
+      ){
+
+        show(
+          'cloudSyncPrompt',
+          true
+        );
+
+      }else{
+
+        Users_migrate();
+
+        if(
+          Users_hasAny()
+        ){
+          show(
+            'login',
+            true
+          );
+        }else{
+          show(
+            'setup',
+            true
+          );
+        }
+
+      }
+
+    },2500);
+
+    return;
+
+  }
+
+  let attempts =
+    Number(
+      localStorage.getItem(
+        'jackosBlockAttempts'
+      ) || 0
+    );
+
+  attempts++;
+
+  localStorage.setItem(
+    'jackosBlockAttempts',
+    attempts
+  );
+
+  document.getElementById(
+    'blockedDeniedText'
+  ).textContent =
+
+`Security verification failed.
+
+The supplied unlock password was incorrect.
+
+Repeated unauthorised access attempts may result in a permanent ban of this JackOS activation key.
+
+If you believe this is an error, please contact Team JackOS.
+
+Attempt ${attempts} of 5`;
+
+  if(attempts >= 5){
+
+    localStorage.setItem(
+      'jackosLocked',
+      'true'
+    );
+
+    show(
+      'jackosLockedScreen',
+      true
+    );
+
+    return;
+
+  }
+
+  show(
+    'accessDeniedScreen',
+    true
+  );
+
+  setTimeout(()=>{
+
+    JackOS_ShowBlockedScreen();
+
+  },4000);
+
+}
+async function JackOS_BlockRefresh(){
+
+  const msg =
+    document.getElementById(
+      'blockedMessage'
+    );
+
+  msg.textContent =
+    'Checking Activation Keys...';
+
+  try{
+
+    const response =
+      await fetch(
+        '../JackOS-Server-Files/Activation-Keys/Activation.json',
+        {
+          cache:'no-store'
+        }
+      );
+
+    if(!response.ok){
+
+      throw new Error(
+        'Unable to check activation keys.'
+      );
+
+    }
+
+    const data =
+      await response.json();
+
+    const key =
+      localStorage.getItem(
+        'jackosActivationKey'
+      );
+
+    const licence =
+      (data.keys || [])
+      .find(
+        item =>
+          item.key === key
+      );
+
+    if(!licence){
+
+      msg.textContent =
+        'Activation key not found.';
+
+      return;
+
+    }
+
+    localStorage.setItem(
+      'jackosActivationData',
+      JSON.stringify(
+        licence
+      )
+    );
+
+    JackOSCurrentActivation =
+      licence;
+
+    if(
+      licence.block === false
+    ){
+
+      show(
+        'accessGrantedScreen',
+        true
+      );
+
+      setTimeout(()=>{
+
+        Users_migrate();
+
+        if(
+          Users_hasAny()
+        ){
+          show(
+            'login',
+            true
+          );
+        }else{
+          show(
+            'setup',
+            true
+          );
+        }
+
+      },2500);
+
+      return;
+
+    }
+
+    msg.textContent =
+      'Status checked ✓ Key remains banned.';
+
+  }catch(error){
+
+    msg.textContent =
+      error.message ||
+      'Unable to check activation keys.';
+
+  }
+
+}
+async function JackOS_LockedRefresh(){
+
+  const msg =
+    document.getElementById(
+      'lockedRefreshMsg'
+    );
+
+  const btn =
+    document.getElementById(
+      'lockedRefreshBtn'
+    );
+
+  if(btn)
+    btn.disabled = true;
+
+  msg.textContent =
+    'Checking Activation Keys...';
+
+  try{
+
+    const response =
+      await fetch(
+        '../JackOS-Server-Files/Activation-Keys/Activation.json',
+        {
+          cache:'no-store'
+        }
+      );
+
+    if(!response.ok){
+
+      throw new Error(
+        'Unable to check activation keys.'
+      );
+
+    }
+
+    const data =
+      await response.json();
+
+    const key =
+      localStorage.getItem(
+        'jackosActivationKey'
+      );
+
+    const licence =
+      (data.keys || [])
+      .find(
+        item =>
+          item.key === key
+      );
+
+    if(
+      licence &&
+      licence.block === false
+    ){
+
+      localStorage.removeItem(
+        'jackosLocked'
+      );
+
+      localStorage.removeItem(
+        'jackosBlockAttempts'
+      );
+
+      localStorage.setItem(
+        'jackosActivationData',
+        JSON.stringify(
+          licence
+        )
+      );
+
+      show(
+        'accessGrantedScreen',
+        true
+      );
+
+      setTimeout(()=>{
+
+        Users_migrate();
+
+        if(
+          Users_hasAny()
+        ){
+          show(
+            'login',
+            true
+          );
+        }else{
+          show(
+            'setup',
+            true
+          );
+        }
+
+      },2500);
+
+      return;
+
+    }
+
+    msg.textContent =
+      'Status checked ✓ Key remains banned.';
+
+  }catch(error){
+
+    msg.textContent =
+      error.message ||
+      'Unable to check activation keys.';
+
+  }
+
+  if(btn)
+    btn.disabled = false;
+
 }
 function Startup_continueWithoutActivation(){
   const ok=window.confirm('JackOS can continue in limited Home mode without activation.\n\nServer features, App Store access and cloud features will remain unavailable.\n\nContinue?');
@@ -248,14 +724,7 @@ function CloudSync_begin(){
   );
 
 }
-function CloudSync_backToPrompt(){
 
-  show(
-    'cloudSyncPrompt',
-    true
-  );
-
-}
 
 async function CloudSync_backToPassword(){
 
@@ -474,7 +943,23 @@ try{
   }
 
 }
-function Desktop_toggleStartMenu(){ const sm=document.getElementById('startMenu'); if(sm){ sm.classList.toggle('show'); } }
+function Desktop_toggleStartMenu(){ 
+  const relockBtn =
+  document.getElementById(
+    'relockJackOSBtn'
+  );
+
+if(relockBtn){
+
+  relockBtn.style.display =
+    JackOS_IsTemporarilyUnlocked()
+      ? ''
+      : 'none';
+
+}
+  const sm=document.getElementById('startMenu'); if(sm){ sm.classList.toggle('show'); } 
+
+}
 function Desktop_hideStartMenu(){ const sm=document.getElementById('startMenu'); if(sm){ sm.classList.remove('show'); } }
 document.addEventListener('click', (e)=>{ const sm=document.getElementById('startMenu'); const btn=e.target.closest('.start-btn'); const insideMenu=e.target.closest('#startMenu'); if(sm && !btn && !insideMenu){ sm.classList.remove('show'); } });
 

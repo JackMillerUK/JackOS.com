@@ -24,6 +24,7 @@
       <a href="#home" class="active">Home</a>
       <a href="#about">About</a>
       <a href="#features">Features</a>
+      <a href="#changelog">Changelog</a>
       <a href="#launch">Launch</a>
     </nav>
 
@@ -177,12 +178,31 @@
         </article>
       </div>
     </section>
+<section id="changelog" class="section">
+  <div class="section-kicker">03 — CHANGELOG</div>
 
+  <div class="feature-heading">
+    <h2>
+      Every JackOS update.<br>
+      <span>One complete history.</span>
+    </h2>
+
+    <p>
+      Explore the latest release, review previous updates,
+      and follow the evolution of JackOS from the first public release
+      to the newest builds.
+    </p>
+  </div>
+
+  <div id="changelog-container" class="changelog-grid">
+    <!-- Generated from changelog.json -->
+  </div>
+</section>
     <section id="launch" class="section launch-section">
       <div class="launch-panel">
         <div class="launch-aura"></div>
 
-        <div class="section-kicker">03 — LAUNCH</div>
+        <div class="section-kicker">04 — LAUNCH</div>
 
         <div class="launch-icon">🐵</div>
 
@@ -226,5 +246,81 @@
 
     sections.forEach(section => observer.observe(section));
   </script>
+  <script>
+fetch("changelog.json")
+  .then(response => response.json())
+  .then(data => {
+
+    const container =
+      document.getElementById("changelog-container");
+
+    data.releases.forEach(release => {
+
+      const card = document.createElement("div");
+
+      card.className =
+        "changelog-card" +
+        (release.version === data.latestRelease
+          ? " latest-release"
+          : "");
+
+      let sectionsHTML = "";
+
+      release.sections.forEach(section => {
+
+        sectionsHTML += `
+          <h4>${section.title}</h4>
+          <ul>
+            ${section.items
+              .map(item => `<li>${item}</li>`)
+              .join("")}
+          </ul>
+        `;
+      });
+
+      card.innerHTML = `
+        <div class="changelog-version">
+          ${release.version}
+        </div>
+
+        <div class="changelog-date">
+          ${release.releaseDate}
+        </div>
+
+        <div class="changelog-summary">
+          ${release.summary}
+        </div>
+
+        <button class="changelog-button">
+          View Release Notes
+        </button>
+
+        <div class="changelog-details">
+          <p>${release.overview}</p>
+          ${sectionsHTML}
+        </div>
+      `;
+
+      const button =
+        card.querySelector(".changelog-button");
+
+      const details =
+        card.querySelector(".changelog-details");
+
+      button.addEventListener("click", () => {
+
+        details.classList.toggle("open");
+
+        button.textContent =
+          details.classList.contains("open")
+            ? "Hide Release Notes"
+            : "View Release Notes";
+      });
+
+      container.appendChild(card);
+    });
+
+  });
+</script>
 </body>
 </html>

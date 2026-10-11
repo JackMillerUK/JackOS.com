@@ -1,6 +1,13 @@
 {
   "versions": [
     {
+      "version": "JackOS v5 Beta 2",
+      "description": "First Public v5 Beta Release. Added quite a lot of features including Sandbox Emulator",
+      "releaseDate": "15th September 2026",
+      "safe": true,
+      "pathway": "Old-Versions/JackOS-v5-Beta-2/JackOS-System-Files/JackOS.html"
+    },    
+    {
       "version": "JackOS v4.2.1",
       "description": "JackOS v4.2.1 comes with small updates things like now changing security questions require admin authentication. This update also comes with minor bug fixes to improve security.",
       "releaseDate": "15th May 2026",

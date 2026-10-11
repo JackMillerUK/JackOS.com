@@ -367,7 +367,146 @@
     <div class="final-progress"><span id="finalProgressBar"></span></div>
   </div>
 </section>
+<section id="blockedScreen" class="screen">
 
+  <div class="blocked-shell">
+
+    <video
+      id="blockedVideo"
+      autoplay
+      muted
+      playsinline
+    >
+      ../JackOS-Server-Files/Activation-Keys/locked.mp4
+    </video>
+
+    <h1>JACKOS BLOCKED</h1>
+
+    <p>
+      This activation key has been banned.
+    </p>
+
+    <p>
+      Enter the unlock password provided by Team JackOS.
+    </p>
+
+    <input
+      id="blockedPassword"
+      type="password"
+      placeholder="Unlock password"
+    >
+
+    <div
+      id="blockedMessage"
+      class="oobe-message"
+    ></div>
+
+    <div class="blockedActions">
+
+      <button
+        class="btn oobe-primary"
+        onclick="JackOS_BlockUnlock()"
+      >
+        Unlock
+      </button>
+
+      <button
+        class="btn ghost"
+        onclick="JackOS_BlockRefresh()"
+      >
+        Refresh Status
+      </button>
+
+    </div>
+
+    <small>
+      Temporary unlocks last 15 minutes.
+    </small>
+
+  </div>
+
+</section>
+
+<section id="accessDeniedScreen" class="screen">
+
+  <div class="blocked-result denied">
+
+    <div id="blockedDeniedIcon">
+      ✖
+    </div>
+
+    <h1>
+      ACCESS DENIED
+    </h1>
+
+    <p id="blockedDeniedText"></p>
+
+  </div>
+
+</section>
+
+<section id="jackosLockedScreen" class="screen">
+
+  <div class="blocked-result denied">
+
+    <div class="big-lock-icon">
+      ✖
+    </div>
+
+    <h1>
+      JACKOS LOCKED
+    </h1>
+
+    <p>
+      Too many unsuccessful unlock attempts
+      have been detected.
+    </p>
+
+    <p>
+      This activation key has been placed
+      into a locked state.
+    </p>
+
+    <div
+      id="lockedRefreshMsg"
+      class="oobe-message"
+    ></div>
+
+    <button
+      id="lockedRefreshBtn"
+      class="btn"
+      onclick="JackOS_LockedRefresh()"
+    >
+      Refresh Status
+    </button>
+
+  </div>
+
+</section>
+
+<section id="accessGrantedScreen" class="screen">
+
+  <div class="blocked-result granted">
+
+    <div id="grantedIcon">
+      ✓
+    </div>
+
+    <h1>
+      ACCESS GRANTED
+    </h1>
+
+    <p>
+      Activation key restored.
+    </p>
+
+    <p>
+      Launching JackOS Setup...
+    </p>
+
+  </div>
+
+</section>
 <section id="transition" class="screen">
   <div class="trans-card">
     <div class="trans-title" id="transTitle">Welcome</div>
@@ -1262,6 +1401,14 @@ Back
     <div class="menu-section" style="margin-top:8px;">
       <h3 style="margin:.25rem 0 .5rem 0;">Power</h3>
       <div class="power-options" style="display:flex; gap:8px; flex-wrap:wrap; justify-content:space-around;">
+        <div
+  class="menu-item"
+  id="relockJackOSBtn"
+  style="display:none;"
+  onclick="JackOS_Relock()"
+>
+  Re-Block JackOS
+</div>
         <div class="menu-item" onclick="Desktop_lock()">Lock</div>
         <div class="menu-item" onclick="Desktop_logout()">Log Out</div>
         <div class="menu-item" onclick="Desktop_shutdown()">Shut Down</div>
