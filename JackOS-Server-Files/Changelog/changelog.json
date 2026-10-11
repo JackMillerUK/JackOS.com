@@ -1,0 +1,241 @@
+{
+  "latestRelease": "JackOS v5 Beta 2",
+  "sandboxInfo": {
+    "available": true,
+    "title": "Testing Older Versions",
+    "text": "Users running JackOS Pro or JackOS Elite on JackOS v5 Beta 1 or later can test previous JackOS releases using the JackOS Sandbox Emulator. The Sandbox Emulator allows older versions to run in an isolated environment without affecting the host system or user data."
+  },
+  "releases": [
+    {
+        "version": "JackOS v5 Beta 2",
+        "releaseDate": "15th September 2026",
+        "summary": "Added server features and some v5 features.",
+        "overview": "JackOS v5 Beta 2 is a major release that includes many features and is the first publically released Beta version for v5.",
+        "sections": [
+            {
+            "title": "New Features",
+            "items": [
+                "Established Server Connection.",
+                "Fixed Major Bug Issues.",
+                "Added Sandbox Emulator"
+            ]
+            }
+        ]
+    },
+    {
+      "version": "JackOS v4.2.1",
+      "releaseDate": "15th May 2026",
+      "summary": "Security improvements and bug fixes.",
+      "overview": "JackOS v4.2.1 is a security-focused maintenance release designed to strengthen account protection and improve overall system reliability.",
+      "sections": [
+        {
+          "title": "Security Improvements",
+          "items": [
+            "Administrator authentication is now required before security questions can be modified.",
+            "Additional validation checks have been added to sensitive account-management actions.",
+            "Security hardening improvements help protect important account recovery settings."
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "items": [
+            "Fixed minor issues affecting account configuration.",
+            "Resolved several small security-related bugs.",
+            "Improved overall system stability."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "JackOS v4.2",
+      "releaseDate": "9th May 2026",
+      "summary": "Introduced backup, restore, and recovery tools.",
+      "overview": "JackOS v4.2 introduced one of the largest data-management updates in JackOS history, adding comprehensive backup and recovery tools for user data, system settings, photos, and JackOSDrive contents.",
+      "sections": [
+        {
+          "title": "System Backup and Restore",
+          "items": [
+            "Added support for exporting and importing system backups using the .jkb format.",
+            "Backups can include accounts, passwords, wallpapers, version information, and system configuration.",
+            "Exporting requires administrator authentication.",
+            "Users must create a backup password to protect exported backups.",
+            "Importing requires administrator authentication and the original backup password."
+          ]
+        },
+        {
+          "title": "Photo Backup and Restore",
+          "items": [
+            "Added export and import functionality for Photos.",
+            "All actions require administrator authentication."
+          ]
+        },
+        {
+          "title": "JackOSDrive Backup and Restore",
+          "items": [
+            "Added ZIP archive export functionality for JackOSDrive.",
+            "Added ZIP archive import functionality.",
+            "Imported files are added to existing storage rather than replacing all contents.",
+            "Administrator authentication is required for both actions."
+          ]
+        },
+        {
+          "title": "Compatibility Notes",
+          "items": [
+            "Backup functionality requires JackOS v4.2 or later.",
+            "Backups should be restored using the same version that created them.",
+            "Version mismatch errors may occur when attempting to restore incompatible backups."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "JackOS v4.1.1",
+      "releaseDate": "7th May 2026",
+      "summary": "Major bug fixes for Browser, Photos, JCAM, and the user interface.",
+      "overview": "JackOS v4.1.1 focused on stability, reliability, and user-interface improvements following feedback from earlier releases.",
+      "sections": [
+        {
+          "title": "Browser",
+          "items": [
+            "Fixed multiple browser-related issues.",
+            "Improved webpage rendering reliability.",
+            "Increased stability."
+          ]
+        },
+        {
+          "title": "Photos",
+          "items": [
+            "Resolved issues affecting the Photos application.",
+            "Improved image loading behaviour.",
+            "Fixed file-management problems."
+          ]
+        },
+        {
+          "title": "JCAM",
+          "items": [
+            "Addressed remaining camera-related issues.",
+            "Improved startup reliability.",
+            "Enhanced application stability."
+          ]
+        },
+        {
+          "title": "User Interface",
+          "items": [
+            "Fixed broken interface elements.",
+            "Corrected visual inconsistencies.",
+            "Improved overall appearance and usability."
+          ]
+        },
+        {
+          "title": "System Changes",
+          "items": [
+            "Renamed and reorganised internal system files.",
+            "Improved system structure for future development."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "JackOS v4.1",
+      "releaseDate": "7th May 2026",
+      "summary": "Emergency fix release for JCAM.",
+      "overview": "This update delivered an emergency fix for JCAM while larger user-interface improvements continued in development.",
+      "sections": [
+        {
+          "title": "JCAM Fixes",
+          "items": [
+            "Fixed the primary issue preventing normal operation.",
+            "Improved application stability.",
+            "Restored full application functionality."
+          ]
+        },
+        {
+          "title": "Notes",
+          "items": [
+            "Planned user-interface updates were delayed to a future release.",
+            "Development efforts were prioritised on resolving JCAM issues."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "JackOS v4.0",
+      "releaseDate": "30th April 2026",
+      "summary": "Major security improvements and administrative controls.",
+      "overview": "JackOS v4.0 marked a major security milestone and introduced stronger administrative controls throughout the operating system.",
+      "sections": [
+        {
+          "title": "Administrative Authentication",
+          "items": [
+            "Administrator verification is now required for many sensitive actions.",
+            "Improved protection against unauthorised changes.",
+            "Enhanced security for account-management workflows."
+          ]
+        },
+        {
+          "title": "Security Questions",
+          "items": [
+            "Fixed vulnerabilities affecting security questions.",
+            "Improved account recovery security.",
+            "Enhanced verification processes."
+          ]
+        },
+        {
+          "title": "Additional Security Hardening",
+          "items": [
+            "General security improvements throughout the operating system.",
+            "Better protection of system settings and sensitive information."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "JackOS v3.2",
+      "releaseDate": "Unknown",
+      "summary": "Maintenance release and platform refinements.",
+      "overview": "A maintenance release that contributed to the foundation of future JackOS development.",
+      "sections": [
+        {
+          "title": "Known Information",
+          "items": [
+            "Incremental improvements and refinements.",
+            "Internal changes preparing for future releases."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "JackOS v3.1.8",
+      "releaseDate": "Unknown",
+      "summary": "The Major UI Update.",
+      "overview": "One of the most visually significant updates released during the JackOS v3 lifecycle.",
+      "sections": [
+        {
+          "title": "User Interface Refresh",
+          "items": [
+            "Introduced a substantially redesigned interface.",
+            "Modernised the desktop experience.",
+            "Improved visual consistency throughout the operating system."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "JackOS v2.5.1",
+      "releaseDate": "Unknown",
+      "summary": "First public release of JackOS.",
+      "overview": "The first publicly released version of JackOS and the foundation of all future releases.",
+      "sections": [
+        {
+          "title": "Historical Milestones",
+          "items": [
+            "First public JackOS release.",
+            "Initial desktop environment.",
+            "Early JackOS system architecture.",
+            "Beginning of the JackOS release timeline."
+          ]
+        }
+      ]
+    }
+  ]
+}
