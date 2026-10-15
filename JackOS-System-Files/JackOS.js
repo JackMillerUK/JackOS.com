@@ -486,9 +486,34 @@ async function InstalledApps_launch(fileName){
     win.id=id; win.className='installed-app-window'; win.style.display='none';
     const header=document.createElement('div'); header.className='app-window-header';
     const title=document.createElement('strong'); title.className='title'; title.textContent=pkg.manifest.name; header.append(title);
-    const frame=document.createElement('iframe');
-    frame.setAttribute('sandbox','allow-scripts allow-forms allow-modals allow-popups allow-same-origin');
-    frame.title=pkg.manifest.name;
+   const frame = document.createElement('iframe');
+
+// Allow installed games to use keyboard, mouse,
+// Pointer Lock, fullscreen and gamepads.
+frame.setAttribute(
+  'sandbox',
+  'allow-scripts allow-forms allow-modals allow-popups allow-same-origin allow-pointer-lock'
+);
+
+frame.setAttribute(
+  'allow',
+  'fullscreen; gamepad'
+);
+
+// Make the game iframe keyboard-focusable.
+frame.tabIndex = 0;
+
+// Prepare the iframe for game input.
+//
+// IMPORTANT:
+// Do NOT automatically grab Pointer Lock here.
+// Minecraft and other games should request it themselves.
+JackOSInput.prepareFrame(frame, {
+  game: true,
+  autoPointerLock: false
+});
+
+frame.title = pkg.manifest.name;
     win.append(header,frame);
     document.querySelector('#desktop .desktop').append(win);
     InstalledAppsState.windows.set(fileName,win); InstalledAppsState.windowFiles.set(id,fileName);

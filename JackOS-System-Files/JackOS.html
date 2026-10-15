@@ -984,8 +984,14 @@ Media
         <input id="browserUrl" placeholder="Enter URL" value="purplemash.com" />
       </div>
       <div id="browserArea">
-        <iframe id="browserFrame" sandbox="allow-forms allow-scripts allow-popups allow-same-origin allow-top-navigation-by-user-activation" referrerpolicy="no-referrer"></iframe>
-        <div id="browserFallback">
+        <iframe
+  id="browserFrame"
+  tabindex="0"
+  allow="pointer-lock; fullscreen; gamepad"
+  sandbox="allow-forms allow-scripts allow-popups allow-same-origin allow-top-navigation-by-user-activation allow-pointer-lock"
+  referrerpolicy="no-referrer">
+</iframe>
+<div id="browserFallback">
           <div>Some sites block being shown inside apps for security (X-Frame-Options/COEP). If the page looks empty, tap <b>Open in new tab</b>.</div>
           <button id="browserOpenExt2">Open current page in new tab</button>
         </div>
@@ -1548,6 +1554,7 @@ Back
     z-index:10000;
   "
 ></div>
+<script src="JackOS-Input.js"></script>
 <script src="JackOSziplogic.js"></script>
 <script src="JackOS-WindowManager.js"></script>
 <script src="JackOS.js"></script>

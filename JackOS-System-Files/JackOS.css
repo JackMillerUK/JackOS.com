@@ -1890,3 +1890,11 @@ body,
   font-size:150px;
 
 }
+/* =========================================================
+   JackOS Game Input Mode
+   ========================================================= */
+
+iframe.jackos-game-input {
+  cursor: none;
+  outline: none;
+}

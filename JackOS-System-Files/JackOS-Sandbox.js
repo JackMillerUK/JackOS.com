@@ -204,10 +204,20 @@ async function SE_run(path){
     "sandboxFrame";
 
   freshFrame.setAttribute(
-    "sandbox",
-    "allow-scripts allow-forms allow-modals allow-popups allow-same-origin"
-  );
+  "sandbox",
+  "allow-scripts allow-forms allow-modals allow-popups allow-same-origin allow-pointer-lock"
+);
 
+freshFrame.setAttribute(
+  "allow",
+  "pointer-lock; fullscreen; gamepad"
+);
+
+freshFrame.tabIndex = 0;
+JackOSInput.prepareFrame(freshFrame, {
+  game: true,
+  autoPointerLock: true
+});
   freshFrame.setAttribute(
     "referrerpolicy",
     "no-referrer"

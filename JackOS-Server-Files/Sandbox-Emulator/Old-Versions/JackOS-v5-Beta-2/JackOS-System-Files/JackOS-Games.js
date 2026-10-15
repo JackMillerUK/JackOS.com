@@ -9,11 +9,39 @@ function JackOS_isTypingTarget(target){
 }
 
 function JackOS_shouldIgnoreGlobalKey(e){
+  // A game/iframe currently owns the keyboard/mouse.
+  if (
+    typeof JackOSInput !== 'undefined' &&
+    JackOSInput.pointerLocked
+  ) {
+    return true;
+  }
+
   if(!e || typeof e.target === 'undefined') return false;
+
   const target = e.target;
-  if(target && target.closest && target.closest('input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"]')) return true;
+
+  if(
+    target &&
+    target.closest &&
+    target.closest(
+      'input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"]'
+    )
+  ) {
+    return true;
+  }
+
   const active = document.activeElement;
-  return !!(active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable));
+
+  return !!(
+    active &&
+    (
+      active.tagName === 'INPUT' ||
+      active.tagName === 'TEXTAREA' ||
+      active.tagName === 'SELECT' ||
+      active.isContentEditable
+    )
+  );
 }
 
 function JackOS_normalizeScoreObject(obj){
