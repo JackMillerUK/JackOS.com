@@ -1,17 +1,9 @@
 //JackOS-SecurityQuestions.js
 // Security questions
-window.SecQ_setupLater = function(){ 
-  const d = document.getElementById('secqSetupDialog'); 
-  if(d) d.style.display = 'none';
-  // Clear the form for next account
-  ['sqs_p1','sqs_p2','sqs_p3','sqs_a1','sqs_a2','sqs_a3'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  const m = document.getElementById('sqs_msg'); if(m) m.textContent='';
-  // Move to next account
-  setTimeout(() => Setup_nextAccount(), 100);
-}
-
 window.SecQ_setupSave = function(){
-  const d = document.getElementById('secqSetupDialog'); 
+  const d = document.getElementById('secqSetupDialog');
+  const after = d?.__afterSetup;
+  if(d) d.__afterSetup = null;
   const u = d?.dataset?.user || '';
   const q1 = document.getElementById('sqs_p1').value;
   const q2 = document.getElementById('sqs_p2').value;
@@ -44,7 +36,8 @@ window.SecQ_setupSave = function(){
   
   // Wait then close dialog and move to next account
   setTimeout(() => { 
-    if(d) d.style.display = 'none'; 
+    if(d) d.style.display = 'none';
+    if(typeof after==='function'){ after(); return; }
     Setup_nextAccount();
   }, 600);
 }
@@ -66,8 +59,9 @@ const SECQ_BANK = [
 function fillPresets(sel){ if(!sel) return; sel.innerHTML=''; SECQ_BANK.forEach(q=>{ const o=document.createElement('option'); o.value=q; o.textContent=q; sel.appendChild(o); }); }
 
 // ===== Setup-time Wizard (per-user)
-function SecQ_openSetupWizard(username){
+function SecQ_openSetupWizard(username, onDone){
   const dlg=document.getElementById('secqSetupDialog'); if(!dlg) return; dlg.style.display='flex';
+  dlg.__afterSetup = (typeof onDone==='function') ? onDone : null;
   const s1=document.getElementById('sqs_p1'); const s2=document.getElementById('sqs_p2'); const s3=document.getElementById('sqs_p3');
   [s1,s2,s3].forEach(sel=>{ if(!sel) return; sel.innerHTML=''; SECQ_BANK.forEach(q=>{ const o=document.createElement('option'); o.value=q; o.textContent=q; sel.appendChild(o); }); });
   ['sqs_a1','sqs_a2','sqs_a3'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });

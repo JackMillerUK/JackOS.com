@@ -73,13 +73,27 @@ async function JackOS_writeStoredScores(data){
 }
 
 const GAMES=[
-  {id:'flappy', name:'Flappy Bird', icon:'🐦', open:Flappy_open},
-  {id:'tetris', name:'Tetris', icon:'🧩', open:Tetris_open},
-  {id:'snake', name:'Snake', icon:'🐍', open:Snake_open}
+  {id:'flappy', name:'Flappy Bird', icon:'🐦', open:()=>Desktop_launch('flappy')},
+  {id:'tetris', name:'Tetris', icon:'🧩', open:()=>Desktop_launch('tetris')},
+  {id:'snake', name:'Snake', icon:'🐍', open:()=>Desktop_launch('snake')}
 ];
 function Games_open(){ const app=document.getElementById('gamesApp'); if(!app) return; app.style.display='block'; Games_render(); }
 function Games_close(){ const app=document.getElementById('gamesApp'); if(app) app.style.display='none'; }
-function Games_render(){ const list=document.getElementById('gamesList'); if(!list) return; list.innerHTML=''; GAMES.forEach(game=>{ const row=document.createElement('div'); row.className='game-launch-row'; row.innerHTML=`<span class="game-launch-icon">${game.icon}</span><span class="game-launch-name">${game.name}</span>`; const run=document.createElement('button'); run.className='explorer-btn'; run.textContent='Run'; run.onclick=()=>{ Games_close(); game.open(); }; row.appendChild(run); list.appendChild(row); }); }
+function Games_render(){
+  const list=document.getElementById('gamesList'); if(!list) return; list.innerHTML='';
+  const games=[...GAMES];
+  const installed=Array.isArray(InstalledAppsState?.apps)?InstalledAppsState.apps.filter(app=>String(app.category||'').toLowerCase()==='games'):[];
+  installed.forEach(app=>games.push({id:'installed:'+app.fileName,name:app.name,icon:null,open:()=>Desktop_launch('installed:'+app.fileName),installed:app}));
+  if(!games.length){ list.innerHTML='<div class="games-empty">No games are installed.</div>'; return; }
+  games.forEach(game=>{
+    const row=document.createElement('div'); row.className='game-launch-row';
+    const iconWrap=document.createElement('span'); iconWrap.className='game-launch-icon';
+    if(game.installed) iconWrap.append(InstalledApps_icon(game.installed)); else iconWrap.textContent=game.icon;
+    const name=document.createElement('span'); name.className='game-launch-name'; name.textContent=game.name;
+    const run=document.createElement('button'); run.className='explorer-btn'; run.textContent='Open'; run.onclick=()=>{ Games_close(); game.open(); };
+    row.append(iconWrap,name,run); list.appendChild(row);
+  });
+}
 
 // ===== Flappy Bird =====
 const FlappyState = { canvas: null, ctx: null, bird: { x: 80, y: 220, size: 16, velocity: 0 }, pipes: [], score: 0, best: 0, started: false, running: true, gameOver: false, lastTime: 0, spawnTimer: 0 };

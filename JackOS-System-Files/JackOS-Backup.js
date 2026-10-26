@@ -37,7 +37,7 @@ function Backup_accountsForExport(){
     "You will need this password to restore it."
   );
 
-  if(!password) return;
+  if(!password) return {ok:false,cancelled:true,message:"Restore cancelled because no backup password was entered."};
 
   const salt =
     crypto.getRandomValues(
@@ -171,11 +171,11 @@ const BLOCKED_BACKUP_KEYS = [
   "jackosActivated",
   "jackosUpgradeAllowed",
 
-  // Block system
+  // Device-specific Recovery Security — never export/import or cloud-sync.
+  "jackosRecoveryKey",
+  "jackosRecoveryKeyHash",
+  "jackosRecoveryKeyReceived",
 
-  "jackosBlockUnlockUntil",
-  "jackosLocked",
-  "jackosBlockAttempts"
 
 ];
 
@@ -195,8 +195,23 @@ for(
     continue;
   }
 
-  localStorageDump[key] =
-    localStorage.getItem(key);
+  const rawValue=localStorage.getItem(key);
+  // JackOS system messages are device/system credentials and must never
+  // travel with a backup. Normal direct and group Messages remain portable.
+  if(key==='jackosMessages'){
+    try{
+      const messages=JSON.parse(rawValue||'{}');
+      if(messages&&typeof messages==='object'){
+        delete messages.systemMessages;
+      }
+      localStorageDump[key]=JSON.stringify(messages);
+    }catch(_){
+      // If the value is malformed, do not risk exporting system credentials.
+      localStorageDump[key]=rawValue;
+    }
+  }else{
+    localStorageDump[key]=rawValue;
+  }
 }
 
     const manifest = {
@@ -336,7 +351,7 @@ function System_import(){
 
 }
 async function Backup_writeDirectory(zip, archivePath, destinationPath, root){ const parts=destinationPath.split('/').filter(Boolean); const fileName=parts.pop(); let dir=root; for(const part of parts) dir=await dir.getDirectoryHandle(part,{create:true}); const handle=await dir.getFileHandle(fileName,{create:true}); const writable=await handle.createWritable(); await writable.write(await zip.file(archivePath).async('arraybuffer')); await writable.close(); }
-async function Backup_restore(file){
+async function Backup_restore(file, options={}){
   const zip=await JSZip.loadAsync(file); const manifestPath=Object.keys(zip.files).find(path=>!zip.files[path].dir&&path.split('/').pop().toLowerCase()==='manifest.json'); const manifestFile=manifestPath&&zip.file(manifestPath); if(!manifestFile) throw new Error('This ZIP is not a JackOS system backup.'); const manifest=JSON.parse(await manifestFile.async('text'));
 
 
@@ -374,33 +389,9 @@ const archiveRoot =
   JACKOS_VERSION
 ){
 
-  alert(
-
-    "Import cancelled.\n\n"
-
-    +
-
-    "The imported version is:\n\n"
-
-    +
-
-    manifest.version
-
-    +
-
-    "\n\nThe running version is:\n\n"
-
-    +
-
-    JACKOS_VERSION
-
-    +
-
-    "\n\nVersions must match."
-
-  );
-
-  return;
+  const versionMessage = "Backup version mismatch. Imported version: " + manifest.version + "; running version: " + JACKOS_VERSION + ". Versions must match.";
+  if(!options.recoveryFlow) alert("Import cancelled.\n\n" + versionMessage);
+  return {ok:false, cancelled:false, message:versionMessage};
 }
 const importedEdition =
   manifest.edition || "Home";
@@ -436,7 +427,7 @@ if(importRank > currentRank){
 
   );
 
-  if(!ok) return;
+  if(!ok) return {ok:false,cancelled:true,message:"Restore cancelled during edition-upgrade confirmation. No data was changed."};
 }
 if(importRank < currentRank){
 
@@ -460,7 +451,7 @@ if(importRank < currentRank){
 
   );
 
-  if(!ok) return;
+  if(!ok) return {ok:false,cancelled:true,message:"Restore cancelled during edition-downgrade confirmation. No data was changed."};
 }
 const overwrite = confirm(
 
@@ -470,13 +461,13 @@ const overwrite = confirm(
 
 );
 
-if(!overwrite) return;
+if(!overwrite) return {ok:false,cancelled:true,message:"Restore cancelled. Existing data was not replaced."};
 const password =
   prompt(
     "Enter backup password:"
   );
 
-if(!password) return;
+if(!password) return {ok:false,cancelled:true,message:"Restore cancelled because no backup password was entered."};
 const hash =
   await Backup_sha256(
 
@@ -490,10 +481,8 @@ if(
   hash !==
   manifest.protection.passwordHash
 ){
-  alert(
-    "Incorrect backup password."
-  );
-  return;
+  if(!options.recoveryFlow) alert("Incorrect backup password.");
+  return {ok:false,cancelled:false,message:"Incorrect backup password. The backup was not imported."};
 }
 if(
   !confirm(
@@ -504,7 +493,7 @@ if(
 
   )
 ){
-  return;
+  return {ok:false,cancelled:true,message:"Restore cancelled at the final confirmation. No data was changed."};
 }
 const localStorageFile =
   zip.file(
@@ -540,6 +529,22 @@ delete localData.jackosActivationKey;
 delete localData.jackosActivationData;
 delete localData.jackosActivated;
 delete localData.jackosUpgradeAllowed;
+// Recovery Security is device-specific and must never travel through
+// export/import or cloud restore.
+delete localData.jackosRecoveryKey;
+delete localData.jackosRecoveryKeyHash;
+delete localData.jackosRecoveryKeyReceived;
+if(localData.jackosMessages){
+  try{
+    const messages=JSON.parse(localData.jackosMessages);
+    if(messages&&typeof messages==='object') delete messages.systemMessages;
+    localData.jackosMessages=JSON.stringify(messages);
+  }catch(_){
+    // Never import an opaque/invalid Messages payload that could contain
+    // a JackOS system credential notice. Normal message history is safe.
+    delete localData.jackosMessages;
+  }
+}
 
 delete localData.jackosBlockUnlockUntil;
 delete localData.jackosLocked;
@@ -636,34 +641,19 @@ for(const incoming of manifest.accounts){
 
 
 
-alert(
-  "System restored.\n\nJackOS will restart."
-);
-document.getElementById(
-  "systemImportArea"
-).style.display =
-  "none";
-if(
-  !window.JACKOS_CLOUD_SYNC_MODE
-){
-
-  location.reload();
-
+const systemImportArea=document.getElementById("systemImportArea");
+if(systemImportArea) systemImportArea.style.display="none";
+if(options.recoveryFlow){
+  return {ok:true,message:"The system backup was restored successfully. JackOS is ready to restart."};
 }
-
-
-
-
-
-
-  
-  
-
-
+alert("System restored.\n\nJackOS will restart.");
+if(!window.JACKOS_CLOUD_SYNC_MODE) location.reload();
+return {ok:true,message:"System backup restored successfully."};
 }
 async function Backup_restoreCloud(
   file,
-  password
+  password,
+  options={}
 ){
 
   const zip =
@@ -730,9 +720,9 @@ async function Backup_restoreCloud(
     window.confirm =
       ()=>true;
 
-    await Backup_restore(
-      file
-    );
+    const restored=await Backup_restore(file,options);
+    if(!restored?.ok) return restored;
+    return {ok:true,message:options.recoveryFlow?'Cloud backup data restored successfully.':'Cloud backup restored successfully.'};
 
   }finally{
 

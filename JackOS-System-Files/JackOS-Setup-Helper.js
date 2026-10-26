@@ -413,8 +413,12 @@
     Setup_promptSecurityQuestions();
   };
 
-  window.JackOS_OOBE_finalise=function(){
+  window.JackOS_OOBE_finalise=async function(){
     setStage('final');
+    // Recovery keys are now issued by the first normal boot after setup, via
+    // a formal JackOS message to every administrator. Do not generate or
+    // reveal the device-specific key during OOBE.
+    const recoveryKey=null;
     screen('finalSetup',true);
     const list=document.getElementById('finalChecklist');
     const bar=document.getElementById('finalProgressBar');
@@ -450,12 +454,32 @@
       mark('finish','done'); progress(5);
       localStorage.setItem(OOBE_KEY,'true');
       localStorage.removeItem(STAGE_KEY);
-      setTimeout(()=>{
-        show('login',true);
+      const finishLogin=()=>{
+        // Final setup is the end of OOBE, so make the login screen the
+        // authoritative visible screen. Clear any startup/OOBE fade state
+        // first; otherwise a stale overlay can leave the browser looking
+        // completely black until the next refresh.
+        const fade=document.getElementById('fadeOverlay');
+        if(fade){ fade.classList.remove('show'); fade.style.display='none'; }
+        const startup=document.getElementById('startup');
+        if(startup) startup.classList.remove('active');
         currentUser=Users_all().find(u=>!u.guest)?.name || Users_all()[0]?.name || '';
         localStorage.setItem('jackosLastUser',currentUser);
+        show('login',false);
         Login_applyUser();
-      },700);
+      };
+      if(recoveryKey){
+        const box=document.getElementById('recoveryKeyReveal');
+        if(box){
+          box.hidden=false;
+          box.innerHTML='<div class="recovery-key-reveal-icon">🔐</div><div><div class="eyebrow">RECOVERY KEY</div><h3>Your JackOS Recovery Key</h3><p>Save this somewhere safe. It is required for destructive Recovery actions if administrator credentials are unavailable.</p><code></code><button class="btn ghost" type="button" id="copyRecoveryKeyBtn">Copy Key</button><button class="btn" type="button" id="continueRecoveryKeyBtn">I’ve saved my key</button></div>';
+          box.querySelector('code').textContent=recoveryKey;
+          box.querySelector('#copyRecoveryKeyBtn').onclick=async()=>{try{await navigator.clipboard.writeText(recoveryKey);box.querySelector('#copyRecoveryKeyBtn').textContent='Copied ✓'}catch(_){}};
+          box.querySelector('#continueRecoveryKeyBtn').onclick=()=>{box.hidden=true;setTimeout(finishLogin,250)};
+          return;
+        }
+      }
+      setTimeout(finishLogin,700);
     },2250);
   };
 

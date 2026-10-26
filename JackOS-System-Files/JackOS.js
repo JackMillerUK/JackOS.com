@@ -55,6 +55,7 @@ const APP_REGISTRY = {
   tetris:     { open: ()=>Tetris_open(),     close: ()=>Tetris_close() },
   snake:      { open: ()=>Snake_open(),      close: ()=>Snake_close() },
   appstore:   { open: ()=>AppStore_open(),  close: ()=>AppStore_close() },
+  messages:   { open: ()=>Messages_open(), close: ()=>Messages_close() },
 };
 
 
@@ -64,6 +65,28 @@ const APP_REGISTRY = {
 
 
 function Desktop_launch(appId){
+
+  // JackOS Restrictions / Screen Time gate. Settings and Messages can remain
+  // available because they are used to request changes after a limit is hit.
+  if(typeof JackOSRestrictions_canLaunchApp==='function') {
+    let restrictionApp=appId;
+    if(typeof appId==='string' && appId.startsWith('installed:')) restrictionApp=InstalledAppsState?.byFile?.get?.(appId.slice(10))||appId.slice(10);
+    const gate=JackOSRestrictions_canLaunchApp(restrictionApp,currentUser);
+    if(!gate.ok){
+      if(gate.reason==='screen-time') JackOSRestrictions_handleLockedApp?.(restrictionApp);
+      else alert('This app is restricted for this account.');
+      return;
+    }
+  }
+
+  // Recovery Safe Mode is a restricted desktop session. Permit only Explorer
+  // and Settings; show a clear explanation instead of silently ignoring clicks.
+  if(typeof Recovery_isSafeMode==='function' && Recovery_isSafeMode() && !['explorer','settings'].includes(appId)){
+    const message='Safe Mode is active. Only Explorer and Settings are available until you restart JackOS normally.';
+    if(typeof Recovery_report==='function') Recovery_report(message,'error');
+    alert(message);
+    return;
+  }
 
   const winMap = {
 
@@ -79,6 +102,7 @@ function Desktop_launch(appId){
     games:'gamesApp',
 
     appstore:'appStoreApp',
+    messages:'messagesWin',
 
     flappy:'flappyApp',
     tetris:'tetrisApp',
@@ -182,8 +206,8 @@ const InstalledAppsState = { apps: [], byFile: new Map(), windows: new Map(), wi
 let installedAppRuntime = null;
 let InstalledAppActive = null;
 
-async function Applications_dir(){
-  const user=await UserData_dir();
+async function Applications_dir(name=currentUser){
+  const user=await UserData_dir(name);
   return user.getDirectoryHandle('Applications', {create:true});
 }
 async function Applications_writeZip(name, data){
@@ -197,11 +221,14 @@ async function Applications_writeZip(name, data){
 
 function AppStore_isImportAllowed(){
 
+  if(typeof Recovery_isSafeMode==='function' && Recovery_isSafeMode()) return false;
+
   if(
     Users_find(currentUser)?.guest
   ){
     return false;
   }
+  if(typeof JackOSRestrictions_isImportAllowed==='function' && !JackOSRestrictions_isImportAllowed(currentUser)) return false;
 
   return (
     JACKOS_EDITION==='Pro' ||
@@ -262,20 +289,34 @@ function AppPackage_path(pkg, path){
   return clean.join('/');
 }
 async function AppPackage_fromBytes(bytes, name){ return AppPackage_read(new File([bytes], name, {type:'application/zip'})); }
+let InstalledAppsScanSequence=0;
 async function InstalledApps_scan(){
-  InstalledAppsState.apps=[]; InstalledAppsState.byFile.clear();
+  const sequence=++InstalledAppsScanSequence;
+  const scannedUser=String(currentUser || localStorage.getItem('jackosLastUser') || 'Guest');
+  const scannedApps=[],scannedByFile=new Map();
   try{
-    const dir = await Applications_dir();
+    const dir=await Applications_dir(scannedUser);
     for await(const entry of dir.values()){
-      if(entry.kind !== 'file' || !entry.name.toLowerCase().endsWith('.zip')) continue;
-      const file = await entry.getFile();
-      const pkg = await AppPackage_read(file);
+      if(entry.kind!=='file'||!entry.name.toLowerCase().endsWith('.zip')) continue;
+      const file=await entry.getFile();
+      const pkg=await AppPackage_read(file);
       if(!pkg) continue;
-      const app = Object.assign({}, pkg.manifest, {fileName:entry.name, fileSize:file.size, installDate:localStorage.getItem('jackosAppInstall:'+UserData_key()+':'+entry.name)||'', pkg});
-      InstalledAppsState.apps.push(app); InstalledAppsState.byFile.set(entry.name, app);
+      const app=Object.assign({},pkg.manifest,{
+        fileName:entry.name,fileSize:file.size,
+        installDate:localStorage.getItem('jackosAppInstall:'+UserData_key(scannedUser)+':'+entry.name)||'',pkg
+      });
+      scannedApps.push(app);scannedByFile.set(entry.name,app);
     }
-  }catch(e){ console.warn('Applications scan failed:', e); }
-  InstalledAppsState.apps.sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+  }catch(e){console.warn('Applications scan failed:',e);}
+  // An older user scan must never overwrite the icons/list for the user who
+  // most recently logged in.
+  if(sequence!==InstalledAppsScanSequence || scannedUser!==String(currentUser || localStorage.getItem('jackosLastUser') || 'Guest')) return InstalledAppsState.apps;
+  scannedApps.sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+  // Bind the rendered installed-app icons to the account whose OPFS was scanned.
+  if(typeof Desktop_setLayoutUser==='function') Desktop_setLayoutUser(scannedUser);
+  InstalledAppsState.apps=scannedApps;
+  InstalledAppsState.byFile.clear();
+  scannedByFile.forEach((value,key)=>InstalledAppsState.byFile.set(key,value));
   InstalledApps_refreshUI();
   return InstalledAppsState.apps;
 }
@@ -335,93 +376,48 @@ function InstalledApps_icon(app){
 }
 function InstalledApps_addLaunchHandlers(icon, fileName){
   icon.style.cursor='pointer';
-  icon.addEventListener('click', ()=>Desktop_launch('installed:'+fileName));
-  icon.addEventListener('contextmenu', e=>{ e.preventDefault(); InstalledApps_delete(fileName); });
+  icon.dataset.installedAppFile=fileName;
+  icon.addEventListener('dblclick',e=>{
+    if(typeof DesktopState!=='undefined'&&DesktopState.suppressOpenUntil>Date.now()){e.preventDefault();e.stopPropagation();return;}
+    e.preventDefault();e.stopPropagation();Desktop_launch('installed:'+fileName);
+  });
+  icon.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();InstalledApps_delete(fileName);});
 }
 
 function InstalledApps_refreshUI(){
+  const layoutUser=typeof Desktop_resolveLayoutUser==='function'?Desktop_resolveLayoutUser(currentUser || localStorage.getItem('jackosLastUser') || 'Guest'):String(currentUser || localStorage.getItem('jackosLastUser') || 'Guest');
+  if(typeof Desktop_setLayoutUser==='function') Desktop_setLayoutUser(layoutUser);
   document.querySelectorAll('[data-installed-app="true"]').forEach(element=>element.remove());
   const desktop=document.querySelector('#desktop .desktop');
   const menu=document.querySelector('#startMenu .menu-section');
-  InstalledAppsState.apps.forEach(app=>{
+  const columns=(typeof Desktop_gridBounds==='function'?Desktop_gridBounds().maxCol+1:10);
+  InstalledAppsState.apps.filter(app=>typeof JackOSRestrictions_isAppAllowed!=='function'||JackOSRestrictions_isAppAllowed(app,currentUser)).forEach((app,index)=>{
     if(desktop){
       const icon=document.createElement('div');
-      icon.style.position='absolute';
-
-const id =
-  'installed:'+
-  app.fileName;
-
-const saved =
-  Desktop_getLayout(id);
-
-let slot;
-
-if(
-  saved?.slot
-){
-  slot=saved.slot;
-}
-else{
-
-  slot=
-    Desktop_findFreeSlot();
-
-  Desktop_saveLayout(
-    id,
-    {slot}
-  );
-
-}
-
-const pos=
-  Desktop_slotToPosition(
-    slot
-  );
-
-icon.style.left=
-  pos.left+'px';
-
-icon.style.top=
-  pos.top+'px';
-
-icon.addEventListener(
-  'mousedown',
-  e=>{
-
-    if(e.button!==0)
-      return;
-
-    DesktopState.draggingIcon=
-      icon;
-
-    DesktopState.dragId=
-      id;
-
-    const rect=
-      icon.getBoundingClientRect();
-
-    DesktopState.dragOffsetX=
-      e.clientX-rect.left;
-
-    DesktopState.dragOffsetY=
-      e.clientY-rect.top;
-
-  }
-);
-      icon.className='icon'; icon.dataset.installedApp='true';
+      icon.className='icon';icon.dataset.installedApp='true';icon.dataset.layoutId='installed:'+app.fileName;
+      icon.style.position='absolute';icon.style.left='-10000px';icon.style.top='-10000px';
       icon.append(InstalledApps_icon(app));
-      const label=document.createElement('div'); label.textContent=app.name; icon.append(label);
-      InstalledApps_addLaunchHandlers(icon,app.fileName); desktop.append(icon);
+      const label=document.createElement('div');label.textContent=app.name;label.className='desktop-icon-label';icon.append(label);
+      desktop.append(icon);
+      if(typeof Desktop_bindIconDrag==='function') Desktop_bindIconDrag(icon);
+      InstalledApps_addLaunchHandlers(icon,app.fileName);
+      const saved=typeof Desktop_getLayout==='function'?Desktop_getLayout(icon.dataset.layoutId,layoutUser):null;
+      let wanted;
+      if(saved&&Number.isFinite(Number(saved.left))&&Number.isFinite(Number(saved.top))) wanted={left:Number(saved.left),top:Number(saved.top)};
+      else if(saved?.slot&&typeof Desktop_slotToPosition==='function') wanted=Desktop_slotToPosition(saved.slot);
+      else if(typeof Desktop_slotToPosition==='function') wanted=Desktop_slotToPosition({col:index%columns,row:Math.floor(index/columns)});
+      else wanted={left:20+(index%columns)*90,top:20+Math.floor(index/columns)*100};
+      const pos=typeof Desktop_findFreePosition==='function'?Desktop_findFreePosition(icon,wanted.left,wanted.top,icon.dataset.layoutId):wanted;
+      icon.style.left=pos.left+'px';icon.style.top=pos.top+'px';
+      if(typeof Desktop_saveLayout==='function') Desktop_saveLayout(icon.dataset.layoutId,{left:pos.left,top:pos.top,slot:typeof Desktop_positionExactSlot==='function'?Desktop_positionExactSlot(pos.left,pos.top):null},layoutUser);
     }
     if(menu){
-      const item=document.createElement('div'); item.className='menu-item'; item.dataset.app='installed:'+app.fileName; item.dataset.installedApp='true';
-      const ico=document.createElement('span'); ico.className='mi-ico'; ico.append(InstalledApps_icon(app));
-      const name=document.createElement('span'); name.textContent=app.name; item.append(ico,name); menu.append(item);
+      const item=document.createElement('div');item.className='menu-item';item.dataset.app='installed:'+app.fileName;item.dataset.installedApp='true';
+      const ico=document.createElement('span');ico.className='mi-ico';ico.append(InstalledApps_icon(app));
+      const name=document.createElement('span');name.textContent=app.name;item.append(ico,name);menu.append(item);
     }
   });
 }
-
 async function InstalledApps_getPackage(fileName){
   const dir=await Applications_dir();
   const handle=await dir.getFileHandle(fileName);
@@ -454,6 +450,8 @@ function InstalledApps_removeWindow(fileName){
 }
 
 function InstalledApps_delete(fileName){
+  const deleteApp=InstalledAppsState.byFile.get(fileName);
+  if(deleteApp && typeof JackOSRestrictions_profile==='function'){ const perm=(JackOSRestrictions_effective(currentUser)?.appPermissions?.[fileName]||{}); if(perm.delete===false){ alert('Deleting this app is restricted. Send a request from Settings.'); return; } }
   if(Users_find(currentUser)?.guest){ alert('Guest accounts cannot delete applications.'); return; }
   const app=InstalledAppsState.byFile.get(fileName); if(!app) return;
   if(!confirm(`Delete ${app.name}?\n\nThis application will be removed from JackOS.\n\nAny files or data created by this application will remain on JackOS Drive.\n\nThis application can be reinstalled later.`)) return;
@@ -461,7 +459,8 @@ function InstalledApps_delete(fileName){
     InstalledApps_removeWindow(fileName);
     localStorage.removeItem('jackosAppInstall:'+UserData_key()+':'+fileName);
     InstalledApps_scan(); AppStore_render(); Settings_renderApplications(); Desktop_refreshTaskbar();
-  }).catch(error=>alert('Delete failed: '+error.message));
+    Notifications_add?.('App removed', `${app.name} was removed from this account.`, {icon:'🗑️',appId:'installed:'+fileName});
+  }).catch(error=>{ Notifications_add?.('App removal failed', `${app.name}: ${error.message}`, {icon:'⚠️',appId:'installed:'+fileName}); alert('Delete failed: '+error.message); });
 }
 
 async function InstalledApps_export(fileName){
@@ -476,6 +475,7 @@ async function InstalledApps_export(fileName){
 async function InstalledApps_launch(fileName){
   try{
     const app=InstalledAppsState.byFile.get(fileName);
+    if(typeof JackOSRestrictions_canLaunchApp==='function'){const gate=JackOSRestrictions_canLaunchApp(app||fileName,currentUser);if(!gate.ok){if(gate.reason==='screen-time') JackOSRestrictions_handleLockedApp?.(app||fileName); else alert('This app is restricted for this account.');return;}}
     const pkg=app?.pkg||await InstalledApps_getPackage(fileName);
     if(!pkg) throw new Error('Invalid application package');
     const id=InstalledApps_windowId(fileName);
@@ -575,7 +575,15 @@ async function AppStore_serverPackages(){
   for(const name of source.names){ try{ const response=await fetch(source.root+encodeURIComponent(name),{cache:'no-store'}); if(response.ok){ const pkg=await AppPackage_read(await response.blob()); if(pkg) packages.push(Object.assign({},pkg.manifest,{fileName:name,pkg})); } }catch(e){} }
   return packages;
 }
+async function AppStore_requestApproval(app){
+  const why=prompt(`Request approval to install ${app?.name||'this app'}\n\nWhy do you need it?`,'');
+  if(!why||!why.trim()) return;
+  if(typeof JackOSRestrictions_requestChange==='function') JackOSRestrictions_requestChange(currentUser);
+  else alert('Request sent.');
+}
 async function AppStore_installPackage(name, pkg){
+  if(typeof Recovery_isSafeMode==='function' && Recovery_isSafeMode()) throw new Error('App Store is unavailable in Safe Mode.');
+  if(typeof JackOSRestrictions_isInstallAllowed==='function' && !JackOSRestrictions_isInstallAllowed(pkg?.manifest||pkg,currentUser)) throw new Error('This application is restricted for the current account.');
 
 if(
   Users_find(currentUser)?.guest
@@ -589,7 +597,21 @@ if(
 
 }
 
-  const bytes=await pkg.zip.generateAsync({type:'uint8array'}); InstalledApps_removeWindow(name); await Applications_writeZip(name, bytes); localStorage.setItem('jackosAppInstall:'+UserData_key()+':'+name, new Date().toISOString()); await InstalledApps_scan(); AppStore_render();
+  const wasInstalled=InstalledAppsState.byFile.has(name); if(wasInstalled && typeof JackOSRestrictions_effective==='function' && JackOSRestrictions_effective(currentUser)?.appPermissions?.[name]?.update===false){ throw new Error('Updates for this app are blocked. Send a request.'); }
+  const bytes=await pkg.zip.generateAsync({type:'uint8array'}); const oldBytes=InstalledAppsState.byFile.get(name)?.fileSize||0; if(typeof JackOSRestrictions_canAddBytes==='function'&&!await JackOSRestrictions_canAddBytes(currentUser,bytes.byteLength,oldBytes)) throw new Error('Storage limit reached. Request more storage from Settings.'); InstalledApps_removeWindow(name); await Applications_writeZip(name, bytes); localStorage.setItem('jackosAppInstall:'+UserData_key()+':'+name, new Date().toISOString()); await InstalledApps_scan(); AppStore_render(); Notifications_add?.(wasInstalled?'App updated':'App installed', `${pkg.manifest?.name||name} ${wasInstalled?'was updated':'was installed'} successfully.`, {icon:wasInstalled?'↻':'＋',appId:'installed:'+name});
+}
+async function AppStore_installPackageForUser(targetUser,name,pkg,overrideRestriction=false){
+  if(!Users_find(targetUser)||Users_find(targetUser)?.guest) throw new Error('Invalid target account.');
+  if(!overrideRestriction && typeof JackOSRestrictions_isInstallAllowed==='function'&&!JackOSRestrictions_isInstallAllowed(pkg?.manifest||pkg,targetUser)) throw new Error('That application is restricted for this account.');
+  const bytes=await pkg.zip.generateAsync({type:'uint8array'});
+  const dir=await Applications_dir(targetUser);
+  let oldBytes=0;
+  try{const existing=await dir.getFileHandle(name);oldBytes=(await existing.getFile()).size;}catch(_){}
+  if(typeof JackOSRestrictions_canAddBytes==='function'&&!await JackOSRestrictions_canAddBytes(targetUser,bytes.byteLength,oldBytes)) throw new Error('The target account does not have enough storage.');
+  const handle=await dir.getFileHandle(name,{create:true});const writable=await handle.createWritable();await writable.write(bytes);await writable.close();
+  localStorage.setItem('jackosAppInstall:'+UserData_key(targetUser)+':'+name,new Date().toISOString());
+  Notifications_addForUser?.(targetUser,'App installed by administrator',`${pkg.manifest?.name||name} was installed for your account by an administrator.`,{icon:'＋',appId:'installed:'+name});
+  return true;
 }
 async function AppStore_open(){
     if(
@@ -669,13 +691,13 @@ Description: ${app.description||'No description.'}`;
 
 check.className='explorer-btn';
 
-check.textContent='Check For Updates';
+check.textContent='Check For Updates'; check.disabled=!!Users_find(currentUser)?.guest;
 
 check.onclick=()=>
   AppStore_checkAppUpdates(
     app.fileName
   );
-      const remove=document.createElement('button'); remove.className='explorer-btn danger'; remove.textContent='Delete'; remove.onclick=()=>InstalledApps_delete(app.fileName);
+      const remove=document.createElement('button'); remove.className='explorer-btn danger'; remove.textContent='Delete'; remove.disabled=!!Users_find(currentUser)?.guest; remove.onclick=()=>InstalledApps_delete(app.fileName);
      
      
       actions.append(
@@ -732,10 +754,10 @@ Description: ${app.description||'No description.'}`;
     
     
         
-        const remove=document.createElement('button'); remove.className='explorer-btn danger'; remove.textContent='Delete'; remove.onclick=()=>InstalledApps_delete(app.fileName); actions.append(
+        const remove=document.createElement('button'); remove.className='explorer-btn danger'; remove.textContent='Delete'; remove.disabled=!!Users_find(currentUser)?.guest; remove.onclick=()=>InstalledApps_delete(app.fileName); actions.append(
   check,
   remove
-); } else { const installed=InstalledAppsState.byFile.get(app.fileName); const button=document.createElement('button'); button.className='explorer-btn'; button.textContent=installed?(installed.version!==app.version?'Update':'Installed'):'Install'; button.disabled=!!installed && installed.version===app.version; button.onclick=()=>AppStore_installPackage(app.fileName,app.pkg); actions.append(button); } card.append(actions); body.append(card); });
+); } else { const installed=InstalledAppsState.byFile.get(app.fileName); const guest=!!Users_find(currentUser)?.guest; const blocked=typeof JackOSRestrictions_isInstallAllowed==='function'&&!JackOSRestrictions_isInstallAllowed(app,currentUser); if(guest){ const note=document.createElement('span'); note.className='settings-subtext'; note.textContent='Guest accounts cannot install applications.'; actions.append(note); } else if(blocked){ const ask=document.createElement('button'); ask.className='explorer-btn'; ask.textContent='Ask for Approval'; ask.onclick=()=>{const why=prompt(`Request approval to install ${app.name}\n\nExplanation:`,''); if(why&&why.trim()){ if(typeof JackOSRestrictions_sendRequest==='function') JackOSRestrictions_sendRequest('app-install',JackOSRestrictions_effective(currentUser)?.guardian,`${app.name} — ${why.trim()}`,{fileName:app.fileName}); } }; actions.append(ask); } else { const button=document.createElement('button'); button.className='explorer-btn'; button.textContent=installed?(installed.version!==app.version?'Update':'Installed'):'Install'; button.disabled=!!installed && installed.version===app.version; button.onclick=()=>AppStore_installPackage(app.fileName,app.pkg).catch(e=>alert(e.message)); actions.append(button); } } card.append(actions); body.append(card); });
 
 
 
@@ -785,7 +807,12 @@ async function AppStore_checkAppUpdates(
   fileName
 ){
 
+  if(Users_find(currentUser)?.guest){ alert('Guest accounts cannot update applications.'); return; }
+
   try{
+    const installedForUpdate=InstalledAppsState.byFile.get(fileName);
+    const perm=typeof JackOSRestrictions_effective==='function'?(JackOSRestrictions_effective(currentUser)?.appPermissions?.[fileName]||{}):{};
+    if(perm.update===false){ alert('Updates for this app are blocked. Send a request.'); return; }
 
     const latest =
       await AppStore_serverPackages();
@@ -884,7 +911,6 @@ ready(()=>{
   document.querySelectorAll('#desktop .icon[data-app]').forEach(icon=>{
     icon.style.cursor = 'pointer';
     icon.addEventListener('dblclick', ()=> Desktop_launch(icon.dataset.app));
-    icon.addEventListener('click',    ()=> Desktop_launch(icon.dataset.app));
   });
   const sm=document.getElementById('startMenu');
   if(sm){ sm.addEventListener('click', (e)=>{ const item=e.target.closest('.menu-item[data-app]');
@@ -901,3 +927,5 @@ ready(()=>{
     
     }); }
 });
+
+ready(()=>{ try{ Notifications_boot?.(); }catch(e){} });

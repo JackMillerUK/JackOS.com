@@ -54,6 +54,8 @@
   <div class="startup-shell">
     
       <div id="main-text" class="fade-text">🐵<br>JackOS<br>v5 Beta 3</div>
+    <div id="recoveryBootHint" class="recovery-boot-hint" hidden>Keep spamming <kbd>Space</kbd> for Recovery</div>
+    <div id="recoveryBootLoading" class="recovery-boot-loading" hidden><div class="recovery-loading-spinner"></div><div class="recovery-loading-title">Loading Recovery Options</div><div class="recovery-loading-subtitle">Preparing JackOS Recovery…</div></div>
     
     <div id="popup" class="activation-card" style="display:none;">
       <div class="eyebrow">JACKOS SETUP</div>
@@ -63,7 +65,6 @@
       <input type="text" id="activation-key" class="oobe-input" placeholder="XXXXX-XXXXX-XXXXX" autocomplete="off">
       <div id="activationMsg" class="oobe-message" aria-live="polite"></div>
       <button class="btn oobe-primary" onclick="Startup_checkKey()">Activate JackOS <span>→</span></button>
-      <button onclick="Startup_continueWithoutActivation()" class="btn ghost oobe-secondary">Continue without activating</button>
     </div>
   </div>
 </section>
@@ -364,149 +365,11 @@
     <h1>Preparing JackOS</h1>
     <p class="oobe-muted">A few final touches, then you’ll be ready to sign in.</p>
     <div id="finalChecklist" class="final-checklist"></div>
+    <div id="recoveryKeyReveal" class="recovery-key-reveal" hidden></div>
     <div class="final-progress"><span id="finalProgressBar"></span></div>
   </div>
 </section>
-<section id="blockedScreen" class="screen">
 
-  <div class="blocked-shell">
-
-    <video
-      id="blockedVideo"
-      autoplay
-      muted
-      playsinline
-    >
-      ../JackOS-Server-Files/Activation-Keys/locked.mp4
-    </video>
-
-    <h1>JACKOS BLOCKED</h1>
-
-    <p>
-      This activation key has been banned.
-    </p>
-
-    <p>
-      Enter the unlock password provided by Team JackOS.
-    </p>
-
-    <input
-      id="blockedPassword"
-      type="password"
-      placeholder="Unlock password"
-    >
-
-    <div
-      id="blockedMessage"
-      class="oobe-message"
-    ></div>
-
-    <div class="blockedActions">
-
-      <button
-        class="btn oobe-primary"
-        onclick="JackOS_BlockUnlock()"
-      >
-        Unlock
-      </button>
-
-      <button
-        class="btn ghost"
-        onclick="JackOS_BlockRefresh()"
-      >
-        Refresh Status
-      </button>
-
-    </div>
-
-    <small>
-      Temporary unlocks last 15 minutes.
-    </small>
-
-  </div>
-
-</section>
-
-<section id="accessDeniedScreen" class="screen">
-
-  <div class="blocked-result denied">
-
-    <div id="blockedDeniedIcon">
-      ✖
-    </div>
-
-    <h1>
-      ACCESS DENIED
-    </h1>
-
-    <p id="blockedDeniedText"></p>
-
-  </div>
-
-</section>
-
-<section id="jackosLockedScreen" class="screen">
-
-  <div class="blocked-result denied">
-
-    <div class="big-lock-icon">
-      ✖
-    </div>
-
-    <h1>
-      JACKOS LOCKED
-    </h1>
-
-    <p>
-      Too many unsuccessful unlock attempts
-      have been detected.
-    </p>
-
-    <p>
-      This activation key has been placed
-      into a locked state.
-    </p>
-
-    <div
-      id="lockedRefreshMsg"
-      class="oobe-message"
-    ></div>
-
-    <button
-      id="lockedRefreshBtn"
-      class="btn"
-      onclick="JackOS_LockedRefresh()"
-    >
-      Refresh Status
-    </button>
-
-  </div>
-
-</section>
-
-<section id="accessGrantedScreen" class="screen">
-
-  <div class="blocked-result granted">
-
-    <div id="grantedIcon">
-      ✓
-    </div>
-
-    <h1>
-      ACCESS GRANTED
-    </h1>
-
-    <p>
-      Activation key restored.
-    </p>
-
-    <p>
-      Launching JackOS Setup...
-    </p>
-
-  </div>
-
-</section>
 <section id="transition" class="screen">
   <div class="trans-card">
     <div class="trans-title" id="transTitle">Welcome</div>
@@ -570,9 +433,30 @@
       <div>Games</div>
     </div>
 
+    <div class="icon" data-app="flappy">
+      <div class="icon-box" aria-hidden="true" style="font-size:28px;">🐦</div>
+      <div>Flappy Bird</div>
+    </div>
+
+    <div class="icon" data-app="tetris">
+      <div class="icon-box" aria-hidden="true" style="font-size:28px;">🧩</div>
+      <div>Tetris</div>
+    </div>
+
+    <div class="icon" data-app="snake">
+      <div class="icon-box" aria-hidden="true" style="font-size:28px;">🐍</div>
+      <div>Snake</div>
+    </div>
+
     <div class="icon" data-app="appstore">
       <div class="icon-box" aria-hidden="true" style="font-size:28px;">🛒</div>
       <div>App Store</div>
+    </div>
+
+    <div class="icon" data-app="messages">
+      <div class="icon-box" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 5.5h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H11l-4.5 3v-3H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z" stroke="#9dd0ff" stroke-width="1.4" stroke-linejoin="round"/><path d="M7 10h10M7 13h6" stroke="#9dd0ff" stroke-width="1.2" stroke-linecap="round"/></svg>
+      </div><div>Messages</div>
     </div>
 
     <!-- Photos app window -->
@@ -1056,6 +940,50 @@ Media
     </div>
 
     <!-- Settings window -->
+
+<!-- JackOS Notification Centre -->
+<div id="notificationCentre" class="notification-centre" aria-hidden="true">
+  <div class="notification-centre-backdrop" onclick="Notifications_close()"></div>
+  <section class="notification-centre-panel">
+    <header><div><span class="eyebrow">JACKOS</span><h2>Notification Centre</h2></div><button class="explorer-btn ghost" onclick="Notifications_close()">×</button></header>
+    <div id="notificationList" class="notification-list"></div>
+    <footer><button class="explorer-btn ghost" onclick="Notifications_clearAll()">Clear all</button></footer>
+  </section>
+</div>
+
+<!-- JackOS Messages -->
+<div id="messagesWin" class="game-window messages-window" style="display:none;">
+  <div class="game-header messages-header"><div class="title">Messages</div><div class="actions"></div></div>
+  <div class="messages-layout"><aside class="message-sidebar"><div class="messages-sidebar-header"><strong>Messages</strong><button class="explorer-btn ghost messages-new-button" type="button" onclick="Messages_newConversation()" title="New conversation">＋</button></div><div id="messageThreads" class="message-threads"></div></aside><main class="message-conversation"><h3 id="messageThreadHeader">Select a conversation</h3><div id="messageList" class="message-list"></div><div class="message-compose"><input id="messageComposeInput" placeholder="Type a message…" autocomplete="off"><button class="explorer-btn" onclick="Messages_send()">Send</button></div></main></div>
+<div id="messagesNewConversation" class="messages-new-dialog" hidden><section class="messages-new-card"><header><div><span class="eyebrow">MESSAGES</span><h3>New Conversation</h3></div><button class="explorer-btn ghost" type="button" onclick="Messages_closeNewConversation()">×</button></header><label class="messages-group-name-wrap">Group name <input id="messagesGroupName" placeholder="Optional for a group chat" autocomplete="off"></label><p class="messages-new-hint">Choose one person for a direct conversation, or two or more people for a group chat.</p><div id="messagesRecipientList" class="messages-recipient-list"></div><footer><button class="explorer-btn ghost" type="button" onclick="Messages_closeNewConversation()">Cancel</button><button class="explorer-btn" type="button" onclick="Messages_createConversation()">Start Conversation</button></footer></section></div>
+</div>
+
+
+
+<div id="screenTimeLockDialog" class="restriction-lock-overlay" hidden style="display:none;">
+  <div class="restriction-lock-card">
+    <div class="eyebrow">SCREEN TIME</div>
+    <div class="restriction-lock-icon">⏱️</div>
+    <h2>Time Limit Reached</h2>
+    <p id="screenTimeLockText">Your daily Screen Time limit has been reached.</p>
+    <div class="restriction-lock-actions">
+      <select id="screenTimeRequestMinutes"><option value="15">15 minutes</option><option value="30" selected>30 minutes</option><option value="60">1 hour</option><option value="120">2 hours</option></select>
+      <button class="explorer-btn" onclick="JackOSRestrictions_requestMoreTime()">Request More Time</button>
+      <button class="explorer-btn ghost" onclick="JackOSRestrictions_openPasscode()">Enter Passcode</button>
+    </div>
+    <textarea id="screenTimeRequestExplanation" class="restriction-request-text" placeholder="Why do you need more time?" aria-label="Explain why you need more Screen Time"></textarea>
+    <div class="restriction-lock-actions">
+      <button class="explorer-btn ghost" onclick="JackOSRestrictions_openMessages()">Open Messages</button>
+      <button class="explorer-btn ghost" onclick="JackOSRestrictions_openSettings()">Open Settings</button>
+    </div>
+    <div id="screenTimePasscodeArea" hidden>
+      <input id="screenTimePasscodeInput" type="password" inputmode="numeric" maxlength="8" placeholder="Screen Time passcode">
+      <button class="explorer-btn" onclick="JackOSRestrictions_submitPasscode()">Continue</button>
+      <div id="screenTimePasscodeMessage" class="settings-subtext"></div>
+    </div>
+  </div>
+</div>
+
 <div id="settingsWin">
   <div id="settingsHeader">
     <div class="title">Settings</div>
@@ -1076,6 +1004,7 @@ About JackOS
   <button class="explorer-btn" onclick="Settings_showData()">Data</button>
   <button class="explorer-btn" onclick="Settings_showApplications()">Applications</button>
   <button class="explorer-btn" onclick="Settings_showTaskbar()">Taskbar</button>
+  <button id="settingsRestrictionsButton" class="explorer-btn" onclick="Settings_showRestrictions()">Restrictions & Screen Time</button>
 
   <button
   id="sandboxBtn"
@@ -1205,6 +1134,7 @@ Back
 
 
 
+<div class="set-panel" id="settingsRestrictionsPanel" style="display:none;"></div>
 <!-- Data panel -->
 <div class="set-panel" id="settingsDataPanel" style="display:none;">
   
@@ -1262,19 +1192,6 @@ Back
   </div>
 </div>
 
-    <!-- Admin Auth Dialog -->
-    <div id="adminAuthDialog" class="modal">
-      <div class="shade" onclick="Admin_cancel()"></div>
-      <div class="panel">
-        <h3>Admin authorisation required</h3>
-        <div class="row"><input id="adminAuthName" placeholder="Admin username"/><input id="adminAuthPass" type="password" placeholder="Admin password"/></div>
-        <div id="adminAuthMsg" style="color:#ffd1d1; min-height:20px;"></div>
-        <div class="footer">
-          <button class="btn ghost" onclick="Admin_cancel()">Cancel</button>
-          <button class="btn" onclick="Admin_verifyAndContinue()">Verify</button>
-        </div>
-      </div>
-    </div>
 <!-- Account Auth Dialog -->
 
 <div id="accountAuthDialog" class="modal">
@@ -1374,6 +1291,7 @@ Back
       <div class="seg"><span id="taskbarUser">--</span></div>
       <div class="seg"><span id="date">--</span></div>
       <div class="seg"><span id="clock">--:--</span></div>
+      <button class="taskbar-tool notification-taskbar-button" onclick="Notifications_open()" title="Notification Centre" aria-label="Notification Centre">🔔<span id="notificationsBadge" class="taskbar-badge" hidden>0</span></button>
     </div>
   </div>
 
@@ -1392,7 +1310,11 @@ Back
       <div class="menu-item" data-app="settings"><span class="mi-ico"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="#ffd66b" stroke-width="1.4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5 5l1.4 1.4M17.6 17.6L19 19M19 5l-1.4 1.4M5 19l1.4-1.4" stroke="#ffd66b" stroke-width="1.2"/></svg></span><span>Settings</span></div>
       <div class="menu-item" data-app="music"><span class="mi-ico"><svg viewBox="0 0 24 24" fill="none"><path d="M9 18V5l11-2v13" stroke="#ff8fbe" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" fill="#ff8fbe"/><circle cx="17" cy="16" r="3" fill="#ff8fbe"/></svg></span><span>Music</span></div>
       <div class="menu-item" data-app="games"><span class="mi-ico">🎮</span><span>Games</span></div>
+      <div class="menu-item" data-app="flappy"><span class="mi-ico">🐦</span><span>Flappy Bird</span></div>
+      <div class="menu-item" data-app="tetris"><span class="mi-ico">🧩</span><span>Tetris</span></div>
+      <div class="menu-item" data-app="snake"><span class="mi-ico">🐍</span><span>Snake</span></div>
       <div class="menu-item" data-app="appstore"><span class="mi-ico">🛒</span><span>App Store</span></div>
+      <div class="menu-item" data-app="messages"><span class="mi-ico">💬</span><span>Messages</span></div>
     </div>
 
 <div
@@ -1424,6 +1346,49 @@ Back
       </div>
     </div>
 
+  </div>
+</section>
+
+    <!-- Admin Auth Dialog -->
+    <div id="adminAuthDialog" class="modal">
+      <div class="shade" onclick="Admin_cancel()"></div>
+      <div class="panel">
+        <h3>Admin authorisation required</h3>
+        <div class="row"><input id="adminAuthName" placeholder="Admin username"/><input id="adminAuthPass" type="password" placeholder="Admin password"/></div>
+        <div id="adminAuthMsg" style="color:#ffd1d1; min-height:20px;"></div>
+        <div class="footer">
+          <button class="btn ghost" onclick="Admin_cancel()">Cancel</button>
+          <button class="btn" onclick="Admin_verifyAndContinue()">Verify</button>
+          <button id="adminForgotRecovery" class="btn ghost recovery-forgot-admin" onclick="Recovery_forgotAdmin()" style="display:none">Forgot admin credentials?</button>
+        </div>
+      </div>
+    </div>
+
+<!-- JackOS Recovery Environment -->
+<section id="recoveryScreen" class="screen recovery-screen">
+  <div class="recovery-shell">
+    <div id="recoveryPrompt" class="recovery-prompt" hidden></div>
+    <div id="recoveryHome" class="recovery-home" hidden>
+      <header class="recovery-header"><div><span class="eyebrow">JACKOS RECOVERY</span><h1>Recovery Environment</h1><p>Repair JackOS without starting the full desktop.</p></div><button class="btn ghost" data-recovery-action="restart" onclick="Recovery_action('restart')">Back / Restart</button></header>
+      <div class="recovery-grid">
+        <button class="recovery-card" data-recovery-action="startup" onclick="Recovery_action('startup')"><b>Startup Repair</b><span>Check startup records, user folders and installed app registry.</span></button>
+        <button class="recovery-card" data-recovery-action="backup" onclick="Recovery_action('backup')"><b>Restore Backup</b><span>Restore a JackOS system backup.</span></button>
+        <button class="recovery-card" data-recovery-action="cloud" onclick="Recovery_action('cloud')"><b>Cloud Sync Restore</b><span>Restore the activated Cloud Sync backup.</span></button>
+        <button class="recovery-card" data-recovery-action="users" onclick="Recovery_action('users')"><b>Repair User Accounts</b><span>Repair account roles and administrator access while preserving passwords.</span></button>
+        <button class="recovery-card" data-recovery-action="apps" onclick="Recovery_action('apps')"><b>Repair Applications</b><span>Scan installed app packages and offer to remove damaged ZIPs.</span></button>
+        <button class="recovery-card" data-recovery-action="safe" onclick="Recovery_action('safe')"><b>Safe Mode</b><span>Restart into a restricted session with Explorer and Settings available.</span></button>
+        <button class="recovery-card" data-recovery-action="diagnostics" onclick="Recovery_action('diagnostics')"><b>Diagnostic Mode</b><span>Check activation, accounts, storage and core JackOS services.</span></button>
+        <button class="recovery-card" data-recovery-action="temp" onclick="Recovery_action('temp')"><b>Clear Temporary Data</b><span>Clear JackOS temporary cache records.</span></button>
+        <button class="recovery-card danger" data-recovery-action="reset" onclick="Recovery_action('reset')"><b>Reset JackOS</b><span>Erase the installation and require activation again.</span></button>
+        <button class="recovery-card danger" data-recovery-action="erase" onclick="Recovery_action('erase')"><b>Erase Everything</b><span>Permanently erase every local JackOS account, file, app and setting.</span></button>
+        <button class="recovery-card" data-recovery-action="shutdown" onclick="Recovery_action('shutdown')"><b>Shutdown</b><span>Safely finish without entering the desktop.</span></button>
+      </div>
+      <div id="recoveryStatus" class="recovery-status" role="status" aria-live="polite">Choose a Recovery action to begin.</div>
+      <div id="recoveryActivity" class="recovery-activity" role="log" aria-live="polite">
+        <div class="recovery-activity-title">Recovery activity</div>
+        <div id="recoveryActivityItems" class="recovery-activity-items"><div class="recovery-activity-empty">No actions performed yet.</div></div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -1569,6 +1534,10 @@ Back
 <script src="JackOS-Music.js"></script>
 <script src="JackOS-SecurityQuestions.js"></script>
 <script src="JackOS-Backup.js"></script>
+<script src="JackOS-Restrictions.js"></script>
+<script src="JackOS-Notifications.js"></script>
+<script src="JackOS-Messages.js"></script>
+<script src="JackOS-Recovery.js"></script>
 <script src="JackOS-Sandbox.js"></script>
 <script src="JackOS-Setup-Helper.js"></script>
 

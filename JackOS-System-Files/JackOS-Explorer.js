@@ -1,6 +1,6 @@
 //JackOS-Explorer.js
 // ===== Explorer (OPFS) =====
-const ExplorerState={ files:[], driveRoot:null, driveCwd:null, cwdPath:[], virtualPath:[], selectedIndex:-1, multi:false, multiSet:new Set(), mode:'read' };
+const ExplorerState={ files:[], driveRoot:null, driveCwd:null, cwdPath:[], virtualPath:[], selectedIndex:-1, multi:false, multiSet:new Set(), mode:'read', draggingEntry:null };
 
 
 function Explorer_open(){ const win=document.getElementById('explorer'); if(win) win.style.display='block'; if(ExplorerState.virtualPath.length){ ExplorerState.virtualPath=[]; ExplorerState.cwdPath=[]; Explorer_listDriveCwd(); } if(!ExplorerState.driveRoot) Explorer_showHome(); if(typeof WindowManager!=='undefined'&&WindowManager.get('explorer')) WindowManager.focus('explorer'); }
@@ -179,7 +179,7 @@ function Explorer_showContextMenu(
 }
 
 
-function Explorer_renderList(){ const ul=document.getElementById('explorer-list'); ul.classList.toggle('multi', ExplorerState.multi); ul.innerHTML=''; ExplorerState.files.forEach((f,i)=>{ const li=document.createElement('li'); li.dataset.idx=i; const cb=document.createElement('input'); cb.type='checkbox'; cb.className='selbox'; cb.checked=ExplorerState.multiSet.has(i); cb.addEventListener('click', (e)=>{ e.stopPropagation(); Explorer_toggleItem(i); }); 
+function Explorer_renderList(){ const ul=document.getElementById('explorer-list'); ul.classList.toggle('multi', ExplorerState.multi); ul.innerHTML=''; ExplorerState.files.forEach((f,i)=>{ const li=document.createElement('li'); li.dataset.idx=i; li.draggable=true; li.classList.add('explorer-draggable'); const cb=document.createElement('input'); cb.type='checkbox'; cb.className='selbox'; cb.checked=ExplorerState.multiSet.has(i); cb.addEventListener('click', (e)=>{ e.stopPropagation(); Explorer_toggleItem(i); }); 
 
 
 
@@ -197,6 +197,105 @@ name.innerHTML=`${icon} ${f.name}`;
 
 const path=document.createElement('div'); path.style.cssText='color:#9dd0ff;font-family:ui-monospace,Menlo,monospace;font-size:12px;'; path.textContent=f.path||''; li.appendChild(cb); li.appendChild(name); li.appendChild(path); if(ExplorerState.multi){ li.addEventListener('click', ()=>Explorer_toggleItem(i)); } else { li.addEventListener('click', ()=>{ Explorer_setSelection(i); Explorer_showEntry(f); }); if(f.kind==='directory') li.ondblclick=()=>Explorer_enterFolder(i); } 
 
+
+li.draggable=!ExplorerState.multi && !f.virtual && !!f.handle;
+// Reliable pointer-based drag/drop. This complements the browser's native
+// drag API and works consistently on the Explorer list and desktop.
+if(!ExplorerState._pointerDragInstalled) ExplorerState._pointerDragInstalled=false;
+if(!ExplorerState._pointerDragInstalled){
+  ExplorerState._pointerDragInstalled=true;
+  ExplorerState.pointerDrag=null;
+}
+li.addEventListener('pointerdown',e=>{
+  if(e.button!==0 || ExplorerState.multi || f.virtual || !f.handle) return;
+  ExplorerState.pointerDrag={li,entry:f,startX:e.clientX,startY:e.clientY,pointerId:e.pointerId,moved:false};
+  try{li.setPointerCapture(e.pointerId);}catch(_){}
+});
+li.addEventListener('pointermove',e=>{
+  const d=ExplorerState.pointerDrag;
+  if(!d||d.li!==li||d.pointerId!==e.pointerId) return;
+  if(!d.moved && Math.hypot(e.clientX-d.startX,e.clientY-d.startY)<5) return;
+  d.moved=true;li.classList.add('dragging');e.preventDefault();
+  document.querySelectorAll('#explorer-list li').forEach(x=>x.classList.remove('drag-over-folder'));
+  const target=document.elementFromPoint(e.clientX,e.clientY)?.closest?.('#explorer-list li');
+  if(target&&target!==li){
+    const idx=Number(target.dataset.idx);const tf=ExplorerState.files[idx];
+    if(tf?.kind==='directory'&&tf.handle&&tf!==f) target.classList.add('drag-over-folder');
+  }
+});
+li.addEventListener('pointerup',async e=>{
+  const d=ExplorerState.pointerDrag;
+  if(!d||d.li!==li||d.pointerId!==e.pointerId) return;
+  try{li.releasePointerCapture(e.pointerId);}catch(_){}
+  ExplorerState.pointerDrag=null;li.classList.remove('dragging');
+  document.querySelectorAll('#explorer-list li').forEach(x=>x.classList.remove('drag-over-folder'));
+  if(!d.moved) return;
+  const target=document.elementFromPoint(e.clientX,e.clientY)?.closest?.('#explorer-list li');
+  if(!target||target===li) return;
+  const idx=Number(target.dataset.idx);const tf=ExplorerState.files[idx];
+  if(!tf||tf.kind!=='directory'||!tf.handle||tf===d.entry) return;
+  try{
+    const result=await Explorer_moveOne(d.entry,tf.handle);
+    if(result?.moved){
+      await Explorer_listDriveCwd();
+      if(typeof Desktop_refreshFiles==='function') await Desktop_refreshFiles(Desktop_resolveLayoutUser?.()||currentUser||localStorage.getItem('jackosLastUser')||'Guest');
+      Desktop_showOverlay?.('Moved '+d.entry.name+' into '+tf.name+' ✓');
+    }
+  }catch(err){alert('Move failed: '+(err?.message||err));}
+});
+li.addEventListener('pointercancel',e=>{if(ExplorerState.pointerDrag?.li===li){ExplorerState.pointerDrag=null;li.classList.remove('dragging');}});
+li.addEventListener('dragstart', e=>{
+  if(ExplorerState.multi || f.virtual || !f.handle){e.preventDefault();return;}
+  Explorer_setSelection(i);
+  ExplorerState.draggingEntry={entry:f,index:i,sourceDir:f.parent||ExplorerState.driveCwd,sourcePath:[...ExplorerState.cwdPath]};
+  li.classList.add('dragging');
+  if(e.dataTransfer){
+    e.dataTransfer.effectAllowed='move';
+    try{e.dataTransfer.setData('text/plain','jackos-explorer-entry:'+String(i));}catch(_){}
+  }
+});
+li.addEventListener('dragend', ()=>{
+  li.classList.remove('dragging');
+  setTimeout(()=>{if(ExplorerState.draggingEntry?.entry===f) ExplorerState.draggingEntry=null;},0);
+  document.querySelectorAll('#explorer-list li').forEach(x=>x.classList.remove('drag-over-folder'));
+});
+if(f.kind==='directory'&&!f.virtual&&f.handle){
+  li.addEventListener('dragover', e=>{
+    const explorerSource=ExplorerState.draggingEntry?.entry;
+    const desktopSource=typeof DesktopState!=='undefined'?DesktopState.nativeDrag?.entry:null;
+    const src=explorerSource||desktopSource;
+    if(!ExplorerState.multi && src && src.handle && src!==f && !src.virtual){
+      e.preventDefault();
+      e.stopPropagation();
+      if(e.dataTransfer) e.dataTransfer.dropEffect='move';
+      li.classList.add('drag-over-folder');
+    }
+  });
+  li.addEventListener('dragleave', e=>{
+    if(!li.contains(e.relatedTarget)) li.classList.remove('drag-over-folder');
+  });
+  li.addEventListener('drop', async e=>{
+    e.preventDefault();e.stopPropagation();li.classList.remove('drag-over-folder');
+    if(ExplorerState.multi || f.virtual || !f.handle) return;
+    // Desktop icons and Explorer list rows share the same OPFS move operation.
+    const explorerDrag=ExplorerState.draggingEntry;
+    const desktopDrag=typeof DesktopState!=='undefined'?DesktopState.nativeDrag:null;
+    const src=explorerDrag?.entry||desktopDrag?.entry||null;
+    if(!src || src===f || src.virtual || !src.handle || !src.parent) return;
+    try{
+      const result=await Explorer_moveOne(src,f.handle);
+      if(!result?.moved) return;
+      ExplorerState.draggingEntry=null;
+      if(typeof DesktopState!=='undefined'){
+        if(desktopDrag?.icon) desktopDrag.icon.classList.remove('desktop-dragging');
+        DesktopState.nativeDrag=null;DesktopState.draggingIcon=null;DesktopState.dragId=null;
+      }
+      await Explorer_listDriveCwd();
+      if(typeof Desktop_refreshFiles==='function') await Desktop_refreshFiles(Desktop_resolveLayoutUser?.()||currentUser||localStorage.getItem('jackosLastUser')||'Guest');
+      Desktop_showOverlay?.('Moved '+src.name+' into '+f.name+' ✓');
+    }catch(err){alert('Move failed: '+(err?.message||err));}
+  });
+}
 
 li.addEventListener(
   'contextmenu',
@@ -787,7 +886,7 @@ if(!ok)
 
 }
 
-async function Explorer_save(){ const idx=ExplorerState.selectedIndex; if(idx<0){ alert('Select a file first.'); return;} const entry=ExplorerState.selectedIndex>=0?ExplorerState.files[ExplorerState.selectedIndex]:null; if(!entry || !entry.handle || entry.kind!=='file'){ alert('Open a file from JackOS Drive to save.'); return; } try{ const w=await entry.handle.createWritable(); await w.write(document.getElementById('explorer-editor').value||''); await w.close(); alert('Saved to JackOS Drive ✓'); }catch(e){ alert('Save failed: '+e.message); } }
+async function Explorer_save(){ const idx=ExplorerState.selectedIndex; if(idx<0){ alert('Select a file first.'); return;} const entry=ExplorerState.selectedIndex>=0?ExplorerState.files[ExplorerState.selectedIndex]:null; if(!entry || !entry.handle || entry.kind!=='file'){ alert('Open a file from JackOS Drive to save.'); return; } try{ const text=document.getElementById('explorer-editor').value||''; const oldSize=entry.file?.size||0; if(typeof JackOSRestrictions_canAddBytes==='function'&&!await JackOSRestrictions_canAddBytes(currentUser,new Blob([text]).size,oldSize)){ alert('Storage limit reached. Request more storage from Settings.'); return; } const w=await entry.handle.createWritable(); await w.write(text); await w.close(); alert('Saved to JackOS Drive ✓'); }catch(e){ alert('Save failed: '+e.message); } }
 function Explorer_toggleMulti(){ ExplorerState.multi = !ExplorerState.multi; if(!ExplorerState.multi) ExplorerState.multiSet.clear(); document.getElementById('multiToggle').textContent = ExplorerState.multi? 'Cancel' : 'Select'; Explorer_renderList(); Explorer_updateMultiBar(); }
 function Explorer_toggleItem(i){ if(ExplorerState.multiSet.has(i)) ExplorerState.multiSet.delete(i); else ExplorerState.multiSet.add(i); Explorer_renderList(); }
 function Explorer_clearMulti(){ ExplorerState.multiSet.clear(); Explorer_renderList(); }
@@ -884,8 +983,66 @@ continue;
   if(entry.kind==='directory'){ const row=document.createElement('div'); row.textContent = entry.name + '/'; row.onclick = async()=>{ DestState.destCwd = entry; DestState.destPath.push(entry.name); await Explorer_destList(); Explorer_destRenderBreadcrumb(); }; list.appendChild(row); } } }
 async function Explorer_destNewFolder(){ const name=prompt('New folder name:'); if(!name) return; await DestState.destCwd.getDirectoryHandle(name, {create:true}); await Explorer_destList(); }
 async function Explorer_confirmDest(){ try{ const mode=DestState.mode; const destDir=DestState.destCwd; if(mode==='move'){ const src=DestState.sourceEntry; await Explorer_moveOne(src, destDir); } else if(mode==='duplicate'){ const src=DestState.sourceEntry; await Explorer_duplicateOne(src, destDir); } else if(mode==='move-many'){ const list=Explorer_selectedEntries(); for(const src of list){ await Explorer_moveOne(src, destDir); } Explorer_clearMulti(); } else if(mode==='duplicate-many'){ const list=Explorer_selectedEntries(); for(const src of list){ await Explorer_duplicateOne(src, destDir); } Explorer_clearMulti(); } else { const filename=document.getElementById('destName').value.trim()||'untitled.txt'; await Explorer_saveAsToDir(destDir, filename); } await Explorer_listDriveCwd(); Explorer_closeDest(); Desktop_showOverlay('Operation complete ✓'); }catch(e){ alert('Operation failed: '+e.message); } }
-async function Explorer_moveOne(src, destDir){ if(!src || !src.handle || src.virtual) return; if(src.parent===destDir) return; if(src.kind==='file'){ await Explorer_copyFileHandleToDir(src.handle, destDir, src.name); await src.parent.removeEntry(src.name); } else { const newDir=await destDir.getDirectoryHandle(src.name,{create:true}); await Explorer_copyDirectoryRecursive(src.handle, newDir); await src.parent.removeEntry(src.name, {recursive:true}); } }
-async function Explorer_duplicateOne(src, destDir){ if(!src) return; if(src.kind==='file'){ const target = await Explorer_uniqueName(destDir, src.name); await Explorer_copyFileHandleToDir(src.handle, destDir, target); } else { const targetBase = await Explorer_uniqueName(destDir, src.name.replace(/\/$/, '')); const newDir=await destDir.getDirectoryHandle(targetBase, {create:true}); await Explorer_copyDirectoryRecursive(src.handle, newDir); } }
+async function Explorer_moveOne(src,destDir){
+  if(!src || !src.handle || !src.parent || !destDir || src.virtual) throw new Error('This item cannot be moved.');
+  let sameParent=src.parent===destDir;
+  if(!sameParent && typeof src.parent.isSameEntry==='function'){
+    try{sameParent=await src.parent.isSameEntry(destDir);}catch(_){}
+  }
+  if(sameParent) return {moved:false,reason:'same-folder',name:src.name};
+  if(src.kind==='directory' && typeof src.handle.isSameEntry==='function'){
+    try{if(await src.handle.isSameEntry(destDir)) throw new Error('A folder cannot be moved into itself.');}catch(err){if(err?.message==='A folder cannot be moved into itself.')throw err;}
+  }
+  // Detect whether this move changes the actual Desktop folder. All callers then
+  // get the same refresh behavior whether the move came from the wallpaper,
+  // Explorer drag/drop, or the Move dialog.
+  let touchesDesktop=false;
+  try{
+    if(typeof Desktop_dir==='function' && typeof src.parent.isSameEntry==='function' && typeof destDir.isSameEntry==='function'){
+      const desktopHandle=await Desktop_dir(currentUser || localStorage.getItem('jackosLastUser') || 'Guest');
+      touchesDesktop=await src.parent.isSameEntry(desktopHandle) || await destDir.isSameEntry(desktopHandle);
+    }
+  }catch(_){}
+  // Never overwrite an existing destination; create a numbered name instead.
+  const targetName=await Explorer_uniqueName(destDir,src.name);
+  if(src.kind==='file'){
+    await Explorer_copyFileHandleToDir(src.handle,destDir,targetName);
+    await src.parent.removeEntry(src.name);
+  }else{
+    const newDir=await destDir.getDirectoryHandle(targetName,{create:true});
+    await Explorer_copyDirectoryRecursive(src.handle,newDir);
+    await src.parent.removeEntry(src.name,{recursive:true});
+  }
+  if(touchesDesktop && typeof Desktop_refreshFiles==='function'){
+    try{await Desktop_refreshFiles(currentUser || localStorage.getItem('jackosLastUser') || 'Guest');}
+    catch(err){console.warn('Moved item, but Desktop display refresh failed:',err);}
+  }
+  return {moved:true,name:targetName};
+}
+async function Explorer_entryBytes(entry){
+  if(!entry)return 0;
+  if(entry.kind==='file'){
+    try{return Number(entry.file?.size||(await entry.handle?.getFile?.())?.size)||0;}catch(_){return 0;}
+  }
+  let total=0;
+  if(entry.kind==='directory'&&entry.handle){
+    async function walk(dir){for await(const child of dir.values()){if(child.kind==='file')total+=(await child.getFile()).size;else await walk(child);}}
+    await walk(entry.handle);
+  }
+  return total;
+}
+async function Explorer_requireStorageForCopy(addBytes,oldBytes=0){
+  if(typeof JackOSRestrictions_canAddBytes==='function'&&!await JackOSRestrictions_canAddBytes(currentUser,addBytes,oldBytes))throw new Error('Storage limit reached. Request more storage from Settings.');
+}
+async function Explorer_duplicateOne(src, destDir){
+  if(!src)return;
+  const bytes=await Explorer_entryBytes(src);await Explorer_requireStorageForCopy(bytes,0);
+  if(src.kind==='file'){
+    const target=await Explorer_uniqueName(destDir,src.name);await Explorer_copyFileHandleToDir(src.handle,destDir,target);
+  }else{
+    const targetBase=await Explorer_uniqueName(destDir,src.name.replace(/\/$/,''));const newDir=await destDir.getDirectoryHandle(targetBase,{create:true});await Explorer_copyDirectoryRecursive(src.handle,newDir);
+  }
+}
 async function Explorer_writeRestorePath(recycleBin,name,path){
   const handle=await recycleBin.getFileHandle(name+'.restorepath',{create:true});
   const writable=await handle.createWritable();
@@ -899,7 +1056,19 @@ async function Explorer_copyDirectoryRecursive(srcDirHandle, destDirHandle){ for
 async function Explorer_existsFile(dir, name){ try{ await dir.getFileHandle(name); return true; }catch(e){ return false; } }
 async function Explorer_existsDir(dir, name){ try{ await dir.getDirectoryHandle(name); return true; }catch(e){ return false; } }
 function suggestSaveName(){ const idx=ExplorerState.selectedIndex; if(idx>=0) return ExplorerState.files[idx].name; return 'untitled.txt'; }
-async function Explorer_saveAsToDir(destDir, filename){ const idx=ExplorerState.selectedIndex; if(idx>=0){ const entry=ExplorerState.files[idx]; if(entry.kind==='file'){ const w=await (await destDir.getFileHandle(filename, {create:true})).createWritable(); await w.write(new Uint8Array(await entry.file.arrayBuffer())); await w.close(); return; } } const fh=await destDir.getFileHandle(filename, {create:true}); const w=await fh.createWritable(); await w.write(''); await w.close(); }
+async function Explorer_saveAsToDir(destDir, filename){
+  const idx=ExplorerState.selectedIndex;
+  if(idx>=0){
+    const entry=ExplorerState.files[idx];
+    if(entry.kind==='file'){
+      const data=new Uint8Array(await entry.file.arrayBuffer());let oldSize=0;
+      try{oldSize=(await (await destDir.getFileHandle(filename)).getFile()).size;}catch(_){}
+      await Explorer_requireStorageForCopy(data.byteLength,oldSize);
+      const w=await (await destDir.getFileHandle(filename,{create:true})).createWritable();await w.write(data);await w.close();return;
+    }
+  }
+  const fh=await destDir.getFileHandle(filename,{create:true});const w=await fh.createWritable();await w.write('');await w.close();
+}
 ready(()=>{
   
   document
@@ -968,7 +1137,7 @@ ready(()=>{
     }
   );
 
-  const input=document.getElementById('importInput'); if(input){ input.addEventListener('change', async (e)=>{ const files=[...e.target.files||[]]; if(!files.length) return; try{ if(!ExplorerState.driveCwd){ await Explorer_openJackOSDrive(); } for(const f of files){ const fh=await ExplorerState.driveCwd.getFileHandle(f.name, {create:true}); const w=await fh.createWritable(); await w.write(new Uint8Array(await f.arrayBuffer())); await w.close(); } await Explorer_listDriveCwd(); alert('Imported '+files.length+' file(s)'); }catch(err){ alert('Import failed: '+err.message); } finally { input.value=''; } }); } });
+  const input=document.getElementById('importInput'); if(input){ input.addEventListener('change', async (e)=>{ const files=[...e.target.files||[]]; if(!files.length) return; try{ const total=files.reduce((n,f)=>n+f.size,0); if(typeof JackOSRestrictions_canAddBytes==='function'&&!await JackOSRestrictions_canAddBytes(currentUser,total)){ alert('Storage limit reached. Request more storage from Settings.'); return; } if(!ExplorerState.driveCwd){ await Explorer_openJackOSDrive(); } for(const f of files){ const fh=await ExplorerState.driveCwd.getFileHandle(f.name, {create:true}); const w=await fh.createWritable(); await w.write(new Uint8Array(await f.arrayBuffer())); await w.close(); } await Explorer_listDriveCwd(); alert('Imported '+files.length+' file(s)'); }catch(err){ alert('Import failed: '+err.message); } finally { input.value=''; } }); } });
 // ===== Export helper =====
 async function Export_files(entries){ try{ const blobs = await Promise.all(entries.map(async e=> new File([await e.file.arrayBuffer()], e.name, {type: e.file.type || 'application/octet-stream'}))); if(blobs.length===1){ if('showSaveFilePicker' in window){ try{ const f=blobs[0]; const ext=(f.name.split('.').pop()||'dat'); const types=f.type?[{description:f.type, accept:{[f.type]:['.'+ext]}}]:undefined; const handle=await window.showSaveFilePicker({suggestedName:f.name, types}); const w=await handle.createWritable(); await w.write(await f.arrayBuffer()); await w.close(); Desktop_showOverlay('Exported ✓'); return; }catch(e){ if(e && e.name==='AbortError') return; } } if(navigator.canShare && navigator.canShare({files:blobs})) { try{ await navigator.share({files:blobs, title: blobs[0].name}); Desktop_showOverlay('Shared ✓'); return; }catch(e){} } const url=URL.createObjectURL(blobs[0]); const a=document.createElement('a'); a.href=url; a.download=blobs[0].name; document.body.append(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },1000); Desktop_showOverlay('Exported ✓'); return; } else { alert('Multi-file ZIP export trimmed in this build. Select one file.'); } }catch(e){ alert('Export failed: '+e.message); } }
 // Desktop Files Helper

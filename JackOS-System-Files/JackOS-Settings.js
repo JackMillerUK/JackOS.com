@@ -15,7 +15,8 @@ if(
 'settingsSandboxPanel',
 'settingsApplicationsPanel',
 'settingsTaskbarPanel',
-'settingsAboutPanel'
+'settingsAboutPanel',
+'settingsRestrictionsPanel'
 ]
   .forEach(id=>{ const panel=document.getElementById(id); if(panel) panel.style.display='none'; });
   
@@ -45,8 +46,9 @@ const about =
   if(acc)  acc.style.display  = 'none';
   if(apps) apps.style.display = 'none';
   if(taskbar) taskbar.style.display = 'none';
-  if(about)
-  about.style.display='none';
+  if(about) about.style.display='none';
+  const restrictions=document.getElementById('settingsRestrictionsPanel');
+  if(restrictions) restrictions.style.display='none';
   if(data) data.style.display = 'block';
 }
 function Settings_showApplications(){
@@ -63,7 +65,8 @@ if(
 'settingsDataPanel',
 'settingsSandboxPanel',
 'settingsTaskbarPanel',
-'settingsAboutPanel'
+'settingsAboutPanel',
+'settingsRestrictionsPanel'
 ]
   
   .forEach(id=>{ const panel=document.getElementById(id); if(panel) panel.style.display='none'; });
@@ -305,8 +308,9 @@ const about = document.getElementById(
     apps.style.display='none';
   if(taskbar)
     taskbar.style.display='none';
-  if(about)
-  about.style.display='none';
+  if(about) about.style.display='none';
+  const restrictions=document.getElementById('settingsRestrictionsPanel');
+  if(restrictions) restrictions.style.display='none';
 
   if(main)
     main.style.display='block';
@@ -320,7 +324,8 @@ async function Settings_showAboutJackOS(){
     'settingsDataPanel',
     'settingsSandboxPanel',
     'settingsApplicationsPanel',
-    'settingsTaskbarPanel'
+    'settingsTaskbarPanel',
+    'settingsRestrictionsPanel'
   ].forEach(id=>{
 
     const panel =
@@ -496,15 +501,29 @@ function Settings_showTaskbar(){
 'settingsDataPanel',
 'settingsSandboxPanel',
 'settingsApplicationsPanel',
-'settingsAboutPanel'
+'settingsAboutPanel',
+'settingsRestrictionsPanel'
 ]
   .forEach(id=>{ const panel=document.getElementById(id); if(panel) panel.style.display='none'; });
   const panel=document.getElementById('settingsTaskbarPanel'); if(panel) panel.style.display='block';
   const compact=document.getElementById('taskbarCompact'); if(compact) compact.checked=localStorage.getItem('jackosTaskbarCompact')==='true';
-  const list=document.getElementById('taskbarPinList'); if(!list) return; list.innerHTML=''; const pinned=JSON.parse(localStorage.getItem('jackosTaskbarPins')||'[]');
-  DesktopWindows.ids.slice(0,9).forEach(id=>{ const label=document.createElement('label'); label.style.display='block'; const input=document.createElement('input'); input.type='checkbox'; input.dataset.app=id; input.checked=pinned.includes(id); label.append(input,' '+DesktopWindows.names[id]); list.append(label); });
+  const list=document.getElementById('taskbarPinList'); if(!list) return; list.innerHTML=''; const pinned=Desktop_getTaskbarPins();
+  const seen=new Set();
+  DesktopWindows.ids.forEach(windowId=>{
+    if(windowId.startsWith('installedApp-')) return;
+    const appId=Desktop_windowAppId(windowId);
+    if(seen.has(appId)||!Desktop_appAvailable(appId)) return;
+    seen.add(appId);
+    const label=document.createElement('label'); label.style.display='block'; const input=document.createElement('input'); input.type='checkbox'; input.dataset.app=appId; input.checked=pinned.includes(appId); label.append(input,' '+Desktop_appName(appId)); list.append(label);
+  });
+  InstalledAppsState.apps.forEach(app=>{
+    const appId='installed:'+app.fileName;
+    if(seen.has(appId)) return;
+    seen.add(appId);
+    const label=document.createElement('label'); label.style.display='block'; const input=document.createElement('input'); input.type='checkbox'; input.dataset.app=appId; input.checked=pinned.includes(appId); label.append(input,' '+app.name); list.append(label);
+  });
 }
-function Settings_saveTaskbar(){ const compact=document.getElementById('taskbarCompact'); localStorage.setItem('jackosTaskbarCompact',String(!!compact?.checked)); const pins=[...document.querySelectorAll('#taskbarPinList input:checked')].map(input=>input.dataset.app); localStorage.setItem('jackosTaskbarPins',JSON.stringify(pins)); document.getElementById('settingsTaskbarPanel')?.style.setProperty('display','block'); Desktop_showOverlay('Taskbar saved ✓'); }
+function Settings_saveTaskbar(){ const compact=document.getElementById('taskbarCompact'); localStorage.setItem('jackosTaskbarCompact',String(!!compact?.checked)); const pins=[...document.querySelectorAll('#taskbarPinList input:checked')].map(input=>input.dataset.app); Desktop_setTaskbarPins(pins); document.getElementById('settingsTaskbarPanel')?.style.setProperty('display','block'); Desktop_showOverlay('Taskbar saved ✓'); }
 
 
 // Helper
@@ -548,10 +567,11 @@ function Settings_open(){
 'settingsSandboxPanel',
 'settingsApplicationsPanel',
 'settingsTaskbarPanel',
-'settingsAboutPanel'
+'settingsAboutPanel',
+'settingsRestrictionsPanel'
 ]
   .forEach(id=>{ const panel=document.getElementById(id); if(panel) panel.style.display='none'; });
-  const main=document.getElementById('settingsMain'); if(main) main.style.display='block';
+  const main=document.getElementById('settingsMain'); if(main) main.style.display='block'; const restrictions=document.getElementById('settingsRestrictionsPanel'); if(restrictions) restrictions.style.display='none';
 
 const guest =
   Users_find(currentUser)?.guest;
@@ -626,7 +646,13 @@ function Settings_renderAccList(){ const cont=document.getElementById('settingsA
 function Settings_addAccountUI(){ Admin_require(()=>{ const dlg=document.getElementById('addAccDialog'); document.getElementById('addAccName').value=''; document.getElementById('addAccPass').value=''; document.getElementById('addAccPass2').value=''; document.getElementById('addAccMsg').textContent=''; dlg.style.display='flex'; }); }
 function Settings_addGuest(){ Admin_require(()=>{ if(Users_addGuest()){ Settings_renderAccList(); Desktop_showOverlay('Guest account added ✓'); } else alert('A Guest account already exists.'); }); }
 function AddAcc_cancel(){ document.getElementById('addAccDialog').style.display='none'; }
-function AddAcc_save(){ const name=(document.getElementById('addAccName').value||'').trim(); const p1=document.getElementById('addAccPass').value||''; const p2=document.getElementById('addAccPass2').value||''; const msg=document.getElementById('addAccMsg'); if(!name){ msg.textContent='Enter a name'; return; } if(!p1){ msg.textContent='Enter a password'; return; } if(p1!==p2){ msg.textContent='Passwords don\'t match'; return; } const list=Users_all(); if(list.find(u=>u.name.toLowerCase()===name.toLowerCase())){ msg.textContent='That name already exists'; return; } list.push({name, pass:p1, role:'user'}); Users_save(list); document.getElementById('addAccDialog').style.display='none'; Settings_renderAccList(); Desktop_showOverlay('Account added ✓'); }
+function AddAcc_save(){ const name=(document.getElementById('addAccName').value||'').trim(); const p1=document.getElementById('addAccPass').value||''; const p2=document.getElementById('addAccPass2').value||''; const msg=document.getElementById('addAccMsg'); if(!name){ msg.textContent='Enter a name'; return; } if(!p1){ msg.textContent='Enter a password'; return; } if(p1!==p2){ msg.textContent='Passwords don\'t match'; return; } const list=Users_all(); if(list.find(u=>u.name.toLowerCase()===name.toLowerCase())){ msg.textContent='That name already exists'; return; } const account={name, pass:p1, role:'user'}; list.push(account); Users_save(list); document.getElementById('addAccDialog').style.display='none'; Settings_renderAccList(); Desktop_showOverlay('Account added ✓');
+  // Every normal account gets its own security-question setup immediately after creation.
+  // Guest accounts are created through Settings_addGuest() and intentionally skip this flow.
+  if(typeof SecQ_openSetupWizard==='function' && !account.guest){
+    SecQ_openSetupWizard(name, ()=>{ Settings_renderAccList(); Desktop_showOverlay('Security questions saved for '+name+' ✓'); });
+  }
+}
 // Change password
 let ChgPw_target=null;
 
@@ -686,3 +712,5 @@ function RmAcc_cancel(){ RmAcc_target=null; document.getElementById('rmAccDialog
 function RmAcc_do(){ const list=Users_all(); const idx=list.findIndex(u=>u.name===RmAcc_target); const msg=document.getElementById('rmAccMsg'); if(idx<0){ msg.textContent='User not found'; return; } const target=list[idx]; const adminCount=Users_countAdmins(list); if(target.role==='admin' && adminCount<=1){ msg.textContent='You must keep at least one admin'; return; } list.splice(idx,1); Users_save(list); document.getElementById('rmAccDialog').style.display='none'; Settings_renderAccList(); Desktop_showOverlay('Account removed ✓'); if(currentUser===target.name){ show('login', true); } }
 // Make Admin (transfer single admin role)
 function Settings_makeAdmin(name){ Admin_requireStrict(()=>{ const list=Users_all(); const u=list.find(x=>x.name===name); if(!u || u.guest){ alert('Guest cannot be an admin.'); return; } if(u.role==='admin'){ if(Users_countAdmins(list)<=1){ alert('You must keep at least one admin.'); return; } u.role='user'; } else u.role='admin'; Users_save(list); Settings_renderAccList(); Desktop_showOverlay('Admin settings changed ✓'); }); }
+
+function Settings_showRestrictions(){ if(typeof JackOSRestrictions_open==='function') JackOSRestrictions_open(); }

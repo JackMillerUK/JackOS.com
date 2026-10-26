@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "notifications": [
+    {
+      "id": "notif-welcome-v5b3",
+      "title": "Welcome to JackOS v5 Beta 3",
+      "message": "Your JackOS installation is ready. Important system announcements will appear here.",
+      "timestamp": "2026-10-23T12:00:00Z",
+      "priority": "normal",
+      "dismissible": true,
+      "icon": "✦"
+    }
+  ]
+}
