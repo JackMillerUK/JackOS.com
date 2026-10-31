@@ -1,0 +1,152 @@
+/* Interior layouts use the same light/dark tokens as the desktop. */
+.jackos-macos #desktop :is(#explorer,#browserWin,#calcApp,#jcamApp,#settingsWin,#photosApp,#musicApp,#gamesApp,#appStoreApp,#messagesWin,#flappyApp,#tetrisApp,#snakeApp,.installed-app-window){position:fixed}
+.jackos-macos #desktop #browserWin{width:min(1040px,calc(100vw - 60px));height:min(680px,calc(100dvh - 156px));min-height:340px;padding:0;top:60px}
+.jackos-macos #desktop #browserHeader{height:58px;min-height:58px;padding:0 14px 0 83px;background:var(--surface-strong);border:0}
+.jackos-macos #browserHeader .window-controls{top:23px}
+.jackos-macos #browserHeader>.title[hidden]{display:none}
+.jackos-macos #desktop #browserBar{display:flex;flex-wrap:nowrap;gap:5px;align-items:center;min-height:0;width:100%;padding:0;background:none;border:0}
+.jackos-macos #browserBar .mac-browser-button,.jackos-macos .mac-browser-button{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;padding:6px;border:0;border-radius:6px;background:transparent;color:var(--fg-dim);box-shadow:none;cursor:pointer}
+.jackos-macos .mac-browser-button svg{width:18px;height:18px}
+.jackos-macos #browserBar .mac-browser-button:hover,.jackos-macos .mac-browser-button:hover{background:var(--surface-alt);color:var(--fg)}
+.jackos-macos #browserBar .mac-browser-button:disabled{opacity:.28;cursor:default;background:none}
+.jackos-macos .mac-browser-address{display:flex;align-items:center;flex:1;gap:4px;margin:0 clamp(3px,2vw,28px);height:33px;min-width:0;border:1px solid var(--border);background:var(--surface-alt);border-radius:8px;box-shadow:inset 0 1px 2px #00000005}
+.jackos-macos .mac-address-symbol{display:flex;width:28px;padding-left:10px;color:var(--fg-dim)}
+.jackos-macos .mac-address-symbol svg{width:14px;height:14px}
+.jackos-macos #desktop #browserUrl{flex:1;width:0;min-width:0;height:100%;background:none;border:0;box-shadow:none;padding:0 4px;font-size:12px;text-align:center;border-radius:0;color:var(--fg)}
+.jackos-macos #browserUrl:focus{text-align:left;outline:none}
+.jackos-macos .mac-browser-address:focus-within{box-shadow:0 0 0 3px #007aff32;border-color:#007aff70}
+.jackos-macos .mac-browser-tab-row{display:flex;align-items:center;height:36px;padding:0 8px;background:var(--surface-alt);border-top:1px solid var(--border);border-bottom:1px solid var(--border);gap:6px}
+.jackos-macos .mac-browser-tabs{display:flex;min-width:0;flex:1;height:100%;gap:2px;overflow:auto;scrollbar-width:thin}
+.jackos-macos .mac-browser-tab{display:flex;align-items:center;flex:1 1 180px;min-width:100px;max-width:260px;border-right:1px solid var(--border);margin:4px 0 3px;border-radius:6px;color:var(--fg-dim)}
+.jackos-macos .mac-browser-tab.selected{background:var(--surface-strong);box-shadow:0 1px 3px #0001;border-color:transparent;color:var(--fg)}
+.jackos-macos .mac-browser-tab-title{border:0;background:none;flex:1;min-width:0;padding:5px 8px;color:inherit;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.jackos-macos .mac-browser-tab-close{background:none;color:var(--fg-dim);border:0;border-radius:4px;margin-right:5px;padding:0;width:19px;height:19px;cursor:pointer;font-size:16px;line-height:1}
+.jackos-macos .mac-browser-tab-close:hover{background:var(--surface-alt)}
+.jackos-macos #browserArea{position:absolute;inset:94px 0 0;border:0;border-radius:0;background:var(--surface-strong)}
+.jackos-macos #browserWin.mac-browser-web #browserArea{bottom:33px}
+.jackos-macos #browserArea iframe.mac-browser-frame{display:block;width:100%;height:100%;border:0;border-radius:0;background:white}
+.jackos-macos #browserArea [hidden],.jackos-macos .mac-browser-hint[hidden]{display:none!important}
+.jackos-macos .mac-browser-start{height:100%;overflow:auto;background:linear-gradient(125deg,#ebf3ff,#f5f0f9 55%,#fde9e0);position:relative}
+.jackos-macos .mac-browser-start:before{content:'';position:absolute;inset:0;background:var(--mac-wallpaper) center/cover;opacity:.11;pointer-events:none}
+.jackos-macos .mac-start-content{position:relative;width:min(660px,100%);margin:0 auto;padding:clamp(30px,5vh,70px) 32px 35px}
+.jackos-macos .mac-start-eyebrow{font-size:10px;letter-spacing:2px;color:var(--fg-dim);font-weight:600}
+.jackos-macos .mac-start-content h1{font-size:clamp(25px,3vw,38px);font-weight:650;letter-spacing:-1.2px;margin:12px 0 28px;color:var(--fg)}
+.jackos-macos .mac-start-search{display:flex;align-items:center;gap:12px;background:var(--surface-strong);border:1px solid var(--glass-highlight);border-radius:12px;padding:13px 17px;box-shadow:0 6px 24px #243f6410;margin:0 0 34px}
+.jackos-macos .mac-start-search>svg{width:19px;height:19px;color:var(--fg-dim)}
+.jackos-macos #desktop .mac-start-search input[type="search"]{flex:1;width:0;min-width:0;background:none!important;border:0!important;padding:2px;box-shadow:none!important;font-size:14px;appearance:none;-webkit-appearance:none}
+.jackos-macos .mac-start-content h2{font-size:15px;margin:0 0 18px;font-weight:600;letter-spacing:-.2px}
+.jackos-macos .mac-quick-links{display:flex;gap:25px;flex-wrap:wrap}
+.jackos-macos .mac-quick-link{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:62px;font-size:11px;color:var(--fg);border:0;padding:0;background:none;cursor:pointer}
+.jackos-macos .mac-quick-icon{display:grid;place-items:center;width:57px;height:57px;border-radius:13px;color:white;font-size:23px;font-weight:600;box-shadow:0 4px 10px #21304a15,inset 0 1px #fff4;transition:transform .15s}
+.jackos-macos .mac-quick-link:hover .mac-quick-icon{transform:translateY(-3px)}
+.jackos-macos .mac-quick-link:last-child .mac-quick-icon{font-size:15px;letter-spacing:-1px}
+.jackos-macos .mac-start-caption{font-size:11px;color:var(--fg-dim);margin:36px 0 0}
+.jackos-macos[data-mac-appearance="dark"] .mac-browser-start{background:linear-gradient(125deg,#202737,#2a2638 55%,#322632)}
+.jackos-macos .mac-browser-hint{position:absolute;bottom:0;left:0;right:0;min-height:33px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 14px;color:var(--fg-dim);background:var(--surface-strong);border-top:1px solid var(--border);font-size:10px}
+.jackos-macos .mac-browser-hint button{border:0;background:none;color:var(--accent);font-size:11px;white-space:nowrap;cursor:pointer}
+
+.jackos-macos #desktop #calcApp{width:310px;min-width:250px;padding:0;background:#292a30;color:white;border-color:#ffffff32}
+.jackos-macos #desktop #calcHeader{background:transparent;border:0;height:47px;min-height:47px;color:#efeff4}
+.jackos-macos #calcBody{padding:0 13px 14px}
+.jackos-macos #calcDisplay{display:flex;align-items:flex-end;justify-content:flex-end;overflow:hidden;min-height:84px;padding:5px 8px 13px;background:none;border:0;border-radius:0;color:#fff;font:300 47px/1 var(--mac-font);letter-spacing:-1.4px}
+.jackos-macos #calcGrid{gap:8px;margin:0}
+.jackos-macos .calc-btn{height:54px;padding:0;border:0;border-radius:12px;background:#505057;color:white;font-size:23px;font-weight:400;box-shadow:0 1px 0 #ffffff12 inset}
+.jackos-macos .calc-btn:hover{filter:brightness(1.2)}
+.jackos-macos .calc-btn.fn{background:#727279;font-size:19px}
+.jackos-macos .calc-btn.op,.jackos-macos .calc-btn.eq{background:#ff9f0a;color:white;box-shadow:none;font-size:26px}
+.jackos-macos #desktop #calcApp.window-maximized #calcBody{height:calc(100% - 47px);display:flex;flex-direction:column}
+.jackos-macos #calcApp.window-maximized #calcGrid{flex:1;grid-auto-rows:1fr}
+.jackos-macos #calcApp.window-maximized .calc-btn{height:100%}
+
+.jackos-macos #desktop #appStoreApp{height:min(650px,calc(100dvh - 155px));padding:0;min-height:350px}
+.jackos-macos #appStoreApp>.app-window-header{height:52px;min-height:52px}
+.jackos-macos .mac-store-sidebar{position:absolute;top:52px;bottom:0;left:0;width:178px;padding:16px 10px;display:flex;flex-direction:column;gap:4px;background:var(--surface-alt);border-right:1px solid var(--border);overflow:auto}
+.jackos-macos .mac-store-sidebar:before{content:'Discover';font-size:11px;font-weight:600;color:var(--fg-dim);padding:0 9px 10px}
+.jackos-macos #desktop .mac-store-sidebar .mac-store-link{background:none;border:0;box-shadow:none;color:var(--fg);padding:9px 11px;font-size:12px;text-align:left;min-height:34px;border-radius:7px}
+.jackos-macos #desktop .mac-store-sidebar .mac-store-link.selected,.jackos-macos #desktop .mac-store-sidebar .mac-store-link:hover{background:#007aff19;color:var(--accent)}
+.jackos-macos #desktop #appStoreImportLabel{margin-top:14px;text-align:center}
+.jackos-macos #desktop #appStoreImportLabel{display:none!important}
+.jackos-macos .mac-import-app-button{margin-left:auto;padding:7px 13px;border:1px solid #007aff26;border-radius:7px;box-shadow:0 1px 2px #0001;background:var(--accent);color:white;font-size:12px;cursor:pointer}
+.jackos-macos .mac-import-app-button:disabled{background:var(--surface-alt);border-color:var(--border);color:var(--fg-dim);cursor:default}
+.jackos-macos .mac-import-reason{margin:auto 9px 4px;padding-top:20px;font-size:11px;line-height:1.5;color:var(--fg-dim)}
+.jackos-macos #appStoreBody{position:absolute;inset:52px 0 0 178px;height:auto;padding:25px;background:var(--surface-strong)}
+.jackos-macos #desktop #appStoreBody>h3{font-size:26px;letter-spacing:-.8px;margin-bottom:24px}
+.jackos-macos #appStoreBody .app-store-card{background:transparent;padding:18px 0;margin:0;border:0;border-bottom:1px solid var(--border);border-radius:0;box-shadow:none}
+.jackos-macos #appStoreBody .app-store-card-actions .explorer-btn{border-radius:14px;box-shadow:none;font-size:11px;padding:6px 16px;min-width:56px}
+.jackos-macos #appStoreBody .app-store-card p{font-size:12px;line-height:1.45}
+.jackos-macos #appStoreBody .app-store-card img{border-radius:11px}
+
+.jackos-macos #desktop #photosApp{padding:0;height:min(620px,calc(100dvh - 155px))}
+.jackos-macos #photosHeader{height:54px;min-height:54px}
+.jackos-macos #photosHeader h2{font-size:13px;margin:0;font-weight:600}
+.jackos-macos #photosHeader .actions{display:flex;gap:7px;margin-left:auto}
+.jackos-macos #photosBody{height:calc(100% - 54px);padding:22px;background:var(--surface-strong);overflow:auto;gap:12px}
+.jackos-macos #photosEmpty{grid-column:1/-1;width:100%;height:100%;min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:30px;background:none;border:0;border-radius:0}
+.jackos-macos .mac-empty-art .icon-box{width:70px;height:70px}
+.jackos-macos #photosEmpty h2{margin:9px 0 0;color:var(--fg);font-size:23px;letter-spacing:-.6px}
+.jackos-macos #photosEmpty p{margin:0;font-size:13px;color:var(--fg-dim)}
+.jackos-macos .mac-empty-import{padding:8px 18px;margin-top:10px;border-radius:8px;background:var(--accent);color:white;font-size:12px;cursor:pointer}
+.jackos-macos .photo-tile{background:var(--surface-alt);border:1px solid var(--border);border-radius:10px;padding:6px;box-shadow:none}
+.jackos-macos .photo-actions{display:flex;gap:5px;padding-top:7px;flex-wrap:wrap}
+.jackos-macos .photo-actions .explorer-btn{font-size:10px;padding:5px 7px;box-shadow:none}
+
+.jackos-macos #desktop #messagesWin{padding:0;height:min(620px,calc(100dvh - 155px));width:min(880px,calc(100vw - 60px))}
+.jackos-macos #messagesWin>.messages-layout{background:var(--surface-strong);height:calc(100% - 48px)!important;grid-template-columns:225px minmax(0,1fr)}
+.jackos-macos .message-sidebar{background:var(--surface-alt);border-color:var(--border)}
+.jackos-macos .message-threads{background:none}
+.jackos-macos .message-conversation{background:var(--surface-strong)}
+.jackos-macos .messages-sidebar-header,.jackos-macos .message-conversation h3,.jackos-macos .message-compose{border-color:var(--border)}
+.jackos-macos .message-compose{background:var(--surface-strong);padding:12px}
+.jackos-macos .message-thread.active{background:#007aff17}
+.jackos-macos .message-row.incoming .message-bubble{background:var(--surface-alt);color:var(--fg)}
+.jackos-macos .message-row.outgoing .message-bubble{background:#1683fa;color:#fff}
+.jackos-macos .message-empty{opacity:1;color:var(--fg-dim)}
+.jackos-macos .notification-centre{z-index:100020}
+.jackos-macos .notification-centre-panel{top:44px;bottom:100px;height:auto;border:1px solid var(--glass-highlight);background:var(--sheet);backdrop-filter:blur(40px);color:var(--fg);box-shadow:var(--mac-shadow)}
+.jackos-macos .notification-item{background:var(--surface-alt);border:1px solid var(--border)}
+.jackos-macos .notification-dismiss{color:var(--fg-dim)}
+.jackos-macos .notification-centre-backdrop{background:#10182730;backdrop-filter:blur(5px)}
+.jackos-macos .notification-centre-panel header,.jackos-macos .notification-centre-panel footer{border-color:var(--border);padding:20px}
+.jackos-macos .notification-centre-panel h2{font-size:20px;letter-spacing:-.5px;margin-top:6px}
+.jackos-macos .notification-centre-panel .eyebrow{opacity:1;color:var(--fg-dim)}
+.jackos-macos .notification-list{flex:1;display:flex;flex-direction:column;gap:10px;padding:14px}
+.jackos-macos .notification-item{flex-shrink:0;border-radius:13px;padding:15px;background:var(--surface-strong);box-shadow:0 2px 8px #15203209}
+.jackos-macos .notification-item:hover,.jackos-macos .notification-item.expanded{background:var(--surface-alt)}
+.jackos-macos .notification-item.is-seen{opacity:.86}
+.jackos-macos .notification-item p{opacity:1;color:var(--fg-dim);font-size:12px;line-height:1.5}
+.jackos-macos .notification-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;opacity:1;min-height:220px;color:var(--fg-dim);line-height:1.7;padding:35px}
+.jackos-macos .notification-empty strong{color:var(--fg);font-size:17px}
+.jackos-macos .notification-empty b{color:var(--fg);font-size:16px;font-weight:600}
+.jackos-macos .notification-empty>span{display:grid;place-items:center;width:44px;height:44px;background:#34c75919;color:#25994a;border-radius:50%;font-size:23px;margin-bottom:12px}
+
+.jackos-macos #desktop #musicApp{height:min(720px,calc(100dvh - 145px));padding:0}
+.jackos-macos #musicNotice{color:var(--fg-dim)}
+.jackos-macos #musicLayout{inset:78px 0 94px;grid-template-columns:190px minmax(0,1fr)}
+.jackos-macos #musicBody{background:var(--surface-strong);padding:12px 26px 26px}
+.jackos-macos .music-nav-button{min-height:32px;font-size:12px;gap:7px;color:var(--fg)}
+.jackos-macos .music-nav-button.active{background:#fa31551a;color:#e93255}
+.jackos-macos .music-nav-icon{color:#ef3e60}
+.jackos-macos .music-nav-icon svg{width:17px;height:17px}
+.jackos-macos .music-card,.jackos-macos .music-browse-entry,.jackos-macos .music-playlist-card{border:0;border-bottom:1px solid var(--border);background:none;border-radius:6px;box-shadow:none}
+.jackos-macos .music-browse-card{background:var(--surface-alt);box-shadow:none}
+.jackos-macos .music-player{bottom:0;left:0;right:0;min-height:88px;padding:10px 20px;border:0;border-top:1px solid var(--border);border-radius:0;box-shadow:none;background:var(--surface-strong);color:var(--fg)}
+.jackos-macos #musicPlayer .explorer-btn{background:none;border:0;box-shadow:none;color:var(--fg)}
+.jackos-macos #musicPlayer #musicPlayPause{color:#ee3f60}
+.jackos-macos #musicProgress,.jackos-macos #musicVolume{accent-color:#ed3e60}
+.jackos-macos #jcamStatus{background:var(--surface-strong);color:var(--fg-dim);font-size:11px}
+.jackos-macos #jcamHeader .actions{margin-left:auto}
+.jackos-macos #jcamHeader .actions button{background:var(--surface-alt);border:1px solid var(--border);color:var(--fg);padding:5px 12px;border-radius:7px;font-size:12px}
+.jackos-macos #desktop #explorer{padding:0}
+.jackos-macos #explorer .body{gap:0}
+.jackos-macos #explorer .pane,.jackos-macos #explorerSidebar{border-radius:0}
+.jackos-macos #explorer .pane.list{background:var(--surface-strong)}
+.jackos-macos #desktop .explorer-btn.danger{background:#e64a4a;color:white}
+.jackos-macos #desktop :is(#browserWin,#photosApp,#settingsWin,#musicApp,#appStoreApp,#messagesWin,#jcamApp):not(.window-maximized){max-height:calc(100dvh - 192px)}
+.jackos-macos #desktop #explorer:not(.window-maximized){max-height:calc(100dvh - 220px)}
+.jackos-macos #desktop .window-maximized{left:8px!important;top:40px!important;width:calc(100vw - 16px)!important;max-height:none!important;height:calc(100dvh - 140px)!important;bottom:100px!important}
+.jackos-macos #desktop .game-window{max-height:calc(100dvh - 150px)}
+.jackos-macos .game-content{max-height:calc(100dvh - 198px);overflow:auto}
+.jackos-macos .game-content canvas{width:auto;height:auto;max-width:100%;max-height:calc(100dvh - 300px);margin:0 auto;object-fit:contain}
+.jackos-macos .game-toolbar{margin-top:10px}
+@media(max-width:720px){.jackos-macos #desktop #browserWin{width:calc(100vw - 24px);min-width:0}.jackos-macos #desktop #browserHeader{padding-left:76px;padding-right:6px}.jackos-macos .mac-browser-address{margin:0 3px}.jackos-macos .mac-store-sidebar{width:140px}.jackos-macos #appStoreBody{left:140px;padding:15px}.jackos-macos #messagesWin>.messages-layout{grid-template-columns:175px minmax(0,1fr)}.jackos-macos #musicLayout{grid-template-columns:155px minmax(0,1fr);bottom:120px}.jackos-macos .music-player{min-height:120px}}
+@media(max-width:500px){.jackos-macos .mac-address-symbol{display:none}.jackos-macos #browserBar>.mac-browser-button:nth-child(3){display:none}.jackos-macos .mac-start-content{padding:25px 20px}.jackos-macos .mac-quick-links{gap:16px}.jackos-macos .mac-start-content h1{font-size:27px}.jackos-macos .mac-browser-hint span{max-width:65%}.jackos-macos #browserWin.mac-browser-web #browserArea{bottom:40px}.jackos-macos .mac-browser-hint{min-height:40px}}

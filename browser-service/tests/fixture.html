@@ -1,0 +1,14 @@
+<!doctype html><meta charset="utf-8"><title>JackOS browser acceptance test</title><style>body{margin:0;font:20px system-ui;background:#f0f5ff;color:#17355a}h1{padding:20px}#action{position:absolute;left:calc(50vw - 140px);top:calc(50vh - 30px);width:280px;height:60px;display:grid;place-items:center;background:#076de0;color:white;border:0;border-radius:10px;font:inherit}input{font:inherit}#result{padding:20px;white-space:pre-wrap}textarea{font:inherit;margin:20px;width:70%;height:80px}</style><h1 id="title">Acceptance test</h1><main id="content"></main><pre id="result"></pre><script>
+const q=new URLSearchParams(location.search),test=q.get('case')||'navigate',content=document.getElementById('content'),result=document.getElementById('result');document.getElementById('title').textContent=test;
+function button(text,fn){const b=document.createElement('button');b.id='action';b.textContent=text;b.onclick=fn;content.append(b);}
+if(test==='navigate')button('Go to page two',()=>location.search='?case=two');
+if(test==='two')result.textContent='PAGE TWO — navigation passed';
+if(test==='popup')button('Open child tab',()=>window.open('?case=child','_blank'));
+if(test==='child')result.textContent='CHILD TAB — popup passed';
+if(test==='dialog')button('Show prompt',()=>{result.textContent='PROMPT: '+prompt('Test prompt','initial');});
+if(test==='upload'){const label=document.createElement('label');label.id='action';label.textContent='Upload test file';const i=document.createElement('input');i.type='file';i.style='position:absolute;inset:0;opacity:0';label.append(i);content.append(label);i.onchange=async()=>{result.textContent='UPLOAD: '+await i.files[0].text();};}
+if(test==='download'){const a=document.createElement('a');a.id='action';a.textContent='Download test file';a.href='test-download.txt';a.download='test-download.txt';content.append(a);}
+if(test==='copy'){const t=document.createElement('textarea');t.value='JackOS clipboard acceptance';content.append(t);t.focus();t.select();}
+if(test==='type'){const i=document.createElement('input');i.placeholder='Type here';i.style='margin:20px';content.append(i);i.focus();i.oninput=()=>{result.textContent='TYPED: '+i.value;};}
+if(test==='scroll'){document.body.style.height='2400px';const p=document.createElement('p');p.textContent='SCROLL PASSED';p.style='position:absolute;top:1200px;font-size:40px';content.append(p);}
+</script>
