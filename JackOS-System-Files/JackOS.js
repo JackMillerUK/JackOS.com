@@ -1,12 +1,12 @@
 //JackOS.js
-// JackOS Core JS (v5 Beta 3 7th October 2026 Release)
+// JackOS Core JS (v5.0 1st November 2026 Release)
 
 
 
 /* JackOS version number global variable and JackOS Edition global variable */
 
 // New JackOS Specs Variables For New Activation System (released v5 Beta 3)
-const JACKOS_VERSION = "5.0 Beta 3";
+const JACKOS_VERSION = "5.0";
 
 let JACKOS_EDITION =
   localStorage.getItem(

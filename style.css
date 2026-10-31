@@ -925,6 +925,9 @@ footer {
   .feature-grid {
     grid-template-columns: 1fr;
   }
+  .requirements-grid {
+  grid-template-columns: 1fr;
+  }
 
   .feature-large {
     grid-row: auto;
@@ -1101,4 +1104,145 @@ footer {
 }
 #changelog {
   padding: 130px 0;
+}
+/* =========================================================
+   REQUIREMENTS
+   ========================================================= */
+
+.requirements-section {
+  padding: 130px 0;
+}
+
+.requirements-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 55px;
+}
+
+.requirement-card {
+  min-height: 280px;
+
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 20px;
+
+  padding: 25px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.075),
+      rgba(255,255,255,.035)
+    );
+
+  transition:
+    transform .25s ease,
+    border-color .25s ease;
+}
+
+.requirement-card:hover {
+  transform: translateY(-4px);
+
+  border-color:
+    rgba(142,171,255,.45);
+}
+
+/* =========================================================
+   SETUP
+   ========================================================= */
+
+.setup-section {
+  padding: 130px 0;
+}
+
+.setup-timeline {
+  display: grid;
+  gap: 14px;
+  margin-top: 55px;
+}
+
+.setup-card {
+  border: 1px solid rgba(255,255,255,.14);
+
+  border-radius: 20px;
+
+  padding: 28px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.075),
+      rgba(255,255,255,.035)
+    );
+
+  transition:
+    transform .25s ease,
+    border-color .25s ease;
+}
+
+.setup-card:hover {
+  transform: translateY(-4px);
+
+  border-color:
+    rgba(142,171,255,.45);
+}
+
+.setup-step {
+  color: var(--blue-bright);
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+  letter-spacing: .15em;
+}
+
+.setup-card h3 {
+  margin-top: 14px;
+  margin-bottom: 15px;
+}
+
+.setup-card p {
+  color: var(--muted);
+
+  line-height: 1.8;
+}
+
+.setup-card strong {
+  display: inline-block;
+
+  margin: 10px 0;
+
+  color: white;
+
+  font-family:
+    "Space Grotesk",
+    sans-serif;
+}
+
+.setup-complete {
+  border: 1px solid rgba(142,171,255,.32);
+
+  border-radius: 24px;
+
+  padding: 40px;
+
+  text-align: center;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(109,145,255,.12),
+      rgba(255,255,255,.04)
+    );
+}
+
+.setup-complete h3 {
+  margin-top: 20px;
+}
+
+.setup-complete p {
+  color: var(--muted);
+  max-width: 600px;
+  margin: 0 auto;
 }

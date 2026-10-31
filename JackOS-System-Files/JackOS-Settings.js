@@ -479,7 +479,7 @@ ${currentUser||'--'}
 <br><br>
 
 Build:
-v5 Beta 3
+v5.0
 
 <br><br>
 
