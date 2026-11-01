@@ -97,7 +97,7 @@ try {
 
     const permissions = [];
 
-    if (!/\bpointer-lock\b/i.test(allow)) {
+    if (!document.documentElement.classList.contains('jackos-macos') && !/\bpointer-lock\b/i.test(allow)) {
       permissions.push('pointer-lock');
     }
 

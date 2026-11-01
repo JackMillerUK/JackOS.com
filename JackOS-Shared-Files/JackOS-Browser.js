@@ -1,6 +1,17 @@
 //JackOS-Browser.js
 // ===== Browser =====
-const BROWSER_HOME = localStorage.getItem('jackosBrowserHome') || 'purplemash.com';
+function Browser_getHome(){
+  const fallback='https://apple.com/uk';
+  try {
+    const saved=localStorage.getItem('jackosBrowserHome');
+    if(!saved||/^(?:https?:\/\/)?(?:www\.)?purplemash\.com(?:[/?#]|$)/i.test(saved.trim())){
+      localStorage.setItem('jackosBrowserHome',fallback);
+      return fallback;
+    }
+    return saved;
+  } catch { return fallback; }
+}
+const BROWSER_HOME = JACKOS_IS_MACOS ? Browser_getHome() : (localStorage.getItem('jackosBrowserHome') || 'purplemash.com');
 const browserState = { history: [], index: -1, frame: null, urlInput: null, fb: null, win: null };
 
 function Browser_open(){
@@ -44,7 +55,7 @@ JackOSInput.prepareFrame(frame, {
   }, 30);
 }
 
-function Browser_sanitize(u){ u=(u||'').trim(); if(!u) return ''; if(!/^https?:\/_\/_\//i.test(u)){ if(/^[\w.-]+\.[A-Za-z]{2,}/.test(u)) return 'https://'+u; return 'https://www.google.com/search?q='+ encodeURIComponent(u); } return u; }
+function Browser_sanitize(u){ u=(u||'').trim(); if(!u) return ''; const hasScheme=JACKOS_IS_MACOS ? /^https?:\/\//i.test(u) : /^https?:\/_\/_\//i.test(u); if(!hasScheme){ if(/^[\w.-]+\.[A-Za-z]{2,}/.test(u)) return 'https://'+u; return 'https://www.google.com/search?q='+ encodeURIComponent(u); } return u; }
 function Browser_navigate(u){ const url=Browser_sanitize(u); if(!url) return; browserState.fb.style.display='none'; browserState.frame.src='about:blank'; setTimeout(()=>{ try{ browserState.frame.src=url; }catch(e){} browserState.history = browserState.history.slice(0, browserState.index+1); browserState.history.push(url); browserState.index = browserState.history.length-1; browserState.urlInput.value=url; if(typeof Browser_checkFallback==='function') setTimeout(Browser_checkFallback, 1200); }, 10); }
 
 function Browser_go(){ Browser_navigate(browserState.urlInput.value); }

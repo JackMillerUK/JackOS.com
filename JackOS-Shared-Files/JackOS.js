@@ -6,6 +6,7 @@
 /* JackOS version number global variable and JackOS Edition global variable */
 
 // New JackOS Specs Variables For New Activation System (released v5 Beta 3)
+const JACKOS_IS_MACOS = window.JACKOS_EDITION_MODE === 'macos';
 const JACKOS_VERSION = "5.0";
 
 let JACKOS_EDITION =

@@ -2041,7 +2041,7 @@ function Desktop_finishPointerDrag(e,cancelled=false){
           Desktop_iconRectAt(icon,wantedLeft,wantedTop),
           Desktop_iconRectAt(x,parseFloat(x.style.left)||0,parseFloat(x.style.top)||0)
         ));
-        if(targetIcon && !window.JackOSMacDesktop){
+        if(targetIcon && !JACKOS_IS_MACOS){
           const targetLeft=parseFloat(targetIcon.style.left)||0;
           const targetTop=parseFloat(targetIcon.style.top)||0;
           const targetPos=Desktop_findFreePosition(targetIcon,targetLeft,targetTop,targetIcon.dataset.layoutId);
@@ -2078,10 +2078,10 @@ function Desktop_bindGlobalPointerDrag(){
     const desktop=document.querySelector('#desktop > .desktop');
     if(!desktop) return;
     const dr=desktop.getBoundingClientRect();
-    const wantedLeft=e.clientX-dr.left-s.offsetX+desktop.scrollLeft;
-    const wantedTop=e.clientY-dr.top-s.offsetY+desktop.scrollTop;
+    const wantedLeft=e.clientX-dr.left-s.offsetX+(JACKOS_IS_MACOS?desktop.scrollLeft:0);
+    const wantedTop=e.clientY-dr.top-s.offsetY+(JACKOS_IS_MACOS?desktop.scrollTop:0);
     const w=icon.offsetWidth||86,h=icon.offsetHeight||86;
-    const maxLeft=Math.max(0,desktop.scrollWidth-w),maxTop=Math.max(0,desktop.scrollHeight-h);
+    const maxLeft=Math.max(0,(JACKOS_IS_MACOS?desktop.scrollWidth:dr.width)-w),maxTop=Math.max(0,(JACKOS_IS_MACOS?desktop.scrollHeight:dr.height)-h);
     icon.style.left=Math.max(0,Math.min(maxLeft,wantedLeft))+'px';
     icon.style.top=Math.max(0,Math.min(maxTop,wantedTop))+'px';
     icon.classList.add('desktop-dragging');
@@ -2110,7 +2110,7 @@ function Desktop_bindDragSurface(){
 }
 function Desktop_dropPoint(desktop,event,offsetX=43,offsetY=30){
   const rect=desktop.getBoundingClientRect();
-  return {left:event.clientX-rect.left-offsetX+desktop.scrollLeft,top:event.clientY-rect.top-offsetY+desktop.scrollTop};
+  return {left:event.clientX-rect.left-offsetX+(JACKOS_IS_MACOS?desktop.scrollLeft:0),top:event.clientY-rect.top-offsetY+(JACKOS_IS_MACOS?desktop.scrollTop:0)};
 }
 
 function Desktop_cleanUp(){

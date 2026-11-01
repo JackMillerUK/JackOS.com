@@ -479,7 +479,7 @@ ${currentUser||'--'}
 <br><br>
 
 Build:
-v5.0
+v${JACKOS_VERSION}
 
 <br><br>
 

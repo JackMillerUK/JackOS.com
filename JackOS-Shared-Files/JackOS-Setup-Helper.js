@@ -252,14 +252,18 @@
     const header=document.createElement('div');
     header.className='app-card-header';
     const icon=document.createElement('div'); icon.className='app-card-icon';
-    icon.textContent='📦';
-    // The manifest icon is inside the application ZIP, not beside JackOS.html.
-    const iconEntry=pkg.icon && pkg.pkg?.zip?.file(AppPackage_path(pkg.pkg,pkg.icon));
-    if(iconEntry){
-      iconEntry.async('blob').then(blob=>{
-        icon.textContent='';icon.style.backgroundImage=`url('${URL.createObjectURL(blob)}')`;
-        icon.classList.add('image-icon');
-      }).catch(()=>{});
+    if(JACKOS_IS_MACOS){
+      icon.textContent='📦';
+      const iconEntry=pkg.icon && pkg.pkg?.zip?.file(AppPackage_path(pkg.pkg,pkg.icon));
+      if(iconEntry){
+        iconEntry.async('blob').then(blob=>{
+          icon.textContent='';icon.style.backgroundImage=`url('${URL.createObjectURL(blob)}')`;
+          icon.classList.add('image-icon');
+        }).catch(()=>{});
+      }
+    }else{
+      icon.textContent=pkg.icon ? '' : '📦';
+      if(pkg.icon){ icon.style.backgroundImage=`url('${String(pkg.icon).replace(/'/g,"%27")}')`; icon.classList.add('image-icon'); }
     }
     const title=document.createElement('div'); title.className='app-card-title';
     const h=document.createElement('h3'); h.textContent=pkg.name||key;
