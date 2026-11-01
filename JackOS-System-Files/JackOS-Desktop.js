@@ -967,7 +967,7 @@ function Desktop_sleep(){ Desktop_hideStartMenu(); Desktop_showOverlay('◐<br>S
 
 function Desktop_closeAllApps(){
 
-  document.querySelectorAll(
+  const windows=[...document.querySelectorAll(
     '#explorer,\
 #browserWin,\
 #calcApp,\
@@ -982,14 +982,27 @@ function Desktop_closeAllApps(){
 #tetrisApp,\
 #snakeApp,\
 #installedAppRuntime, .installed-app-window'
-  ).forEach(win => {
+  )];
 
-    win.style.display='none';
+  windows.forEach(win=>{
+    if(typeof WindowManager!=='undefined'&&WindowManager.get(win.id)){
+      WindowManager.close(win.id);
+      return;
+    }
 
-    win.classList.remove(
-      'window-minimized',
-      'window-maximized'
-    );
+    const appId=typeof Desktop_windowAppId==='function'?Desktop_windowAppId(win.id):win.id;
+    try{
+      if(typeof APP_REGISTRY!=='undefined') APP_REGISTRY[appId]?.close?.();
+    }catch(error){
+      console.error(`Unable to close ${win.id}.`,error);
+    }
+    if(typeof WindowManager!=='undefined') WindowManager.terminateContent(win);
+    const installed=typeof InstalledApps_appForWindow==='function'&&InstalledApps_appForWindow(win.id);
+    if(installed&&typeof InstalledApps_removeWindow==='function') InstalledApps_removeWindow(installed.fileName);
+    else{
+      win.style.display='none';
+      win.classList.remove('window-minimized','window-maximized');
+    }
 
   });
 
@@ -998,12 +1011,6 @@ function Desktop_closeAllApps(){
   if(typeof InstalledAppsState!=='undefined'){
     [...InstalledAppsState.windows.keys()].forEach(InstalledApps_removeWindow);
   }
-
-  try{
-
-    Music_close();
-
-  }catch(e){}
 
   Explorer_clearPreview();
 
@@ -1297,6 +1304,11 @@ ready(()=>{ const pw=document.getElementById('password'); if(pw){ pw.addEventLis
 ready(Login_applyUser);
 
 function Desktop_windowAppId(id){
+
+  if(typeof id==='string'&&id.startsWith('installedApp-')){
+    const installed=typeof InstalledApps_appForWindow==='function'?InstalledApps_appForWindow(id):null;
+    if(installed?.fileName) return 'installed:'+installed.fileName;
+  }
 
   return ({
     explorer:'explorer',

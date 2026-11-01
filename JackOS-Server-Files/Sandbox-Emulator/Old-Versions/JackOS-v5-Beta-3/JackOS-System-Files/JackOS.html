@@ -1,19 +1,12 @@
 <!-- JackOS.html -->
-<!-- JackOS v5.0 -->
+<!-- JackOS v5 Beta -->
 
-<!-- Core HTML code for JackOS. Currently InDev v5.0 -->
+<!-- Core HTML code for JackOS. Currently InDev v5 Beta 3 -->
 
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>
-(function(){
-  const isMacOS = new URLSearchParams(location.search).get('edition') === 'macos';
-  window.JACKOS_EDITION_MODE = isMacOS ? 'macos' : 'classic';
-  document.documentElement.classList.toggle('jackos-macos', isMacOS);
-})();
-</script>
 <script>
 (function () {
     const setupComplete =
@@ -45,18 +38,11 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-<title>JackOS v5.0</title>
+<title>JackOS v5 Beta 3</title>
 <link rel="icon" type="image/png" href="JackOS-Logo.png">
 <link rel="stylesheet" href="JackOS.css">
-<script>
-if (window.JACKOS_EDITION_MODE === 'macos') {
-  document.write('<link rel="stylesheet" href="../JackOS-macOS-System-Files/JackOS-macOS.css">');
-  document.write('<link rel="stylesheet" href="../JackOS-macOS-System-Files/JackOS-macOS-apps.css">');
-  document.write('<link rel="stylesheet" href="../JackOS-macOS-System-Files/JackOS-macOS-setup.css">');
-}
-</script>
 </head>
-<body>
+<body>.
 <button
   id="backToActivationBtn"
   onclick="JackOS_BackToActivation()"
@@ -67,7 +53,7 @@ if (window.JACKOS_EDITION_MODE === 'macos') {
   <div class="oobe-startup-bg"></div>
   <div class="startup-shell">
     
-      <div id="main-text" class="fade-text">🐵<br>JackOS<br>v5.0</div>
+      <div id="main-text" class="fade-text">🐵<br>JackOS<br>v5 Beta 3</div>
     <div id="recoveryBootHint" class="recovery-boot-hint" hidden>Keep spamming <kbd>Space</kbd> for Recovery</div>
     <div id="recoveryBootLoading" class="recovery-boot-loading" hidden><div class="recovery-loading-spinner"></div><div class="recovery-loading-title">Loading Recovery Options</div><div class="recovery-loading-subtitle">Preparing JackOS Recovery…</div></div>
     
@@ -885,7 +871,7 @@ Media
         <iframe
   id="browserFrame"
   tabindex="0"
-  allow="fullscreen; gamepad"
+  allow="pointer-lock; fullscreen; gamepad"
   sandbox="allow-forms allow-scripts allow-popups allow-same-origin allow-top-navigation-by-user-activation allow-pointer-lock"
   referrerpolicy="no-referrer">
 </iframe>
@@ -1554,13 +1540,6 @@ Back
 <script src="JackOS-Recovery.js"></script>
 <script src="JackOS-Sandbox.js"></script>
 <script src="JackOS-Setup-Helper.js"></script>
-<script>
-if (window.JACKOS_EDITION_MODE === 'macos') {
-  document.write('<script src="../JackOS-macOS-System-Files/JackOS-macOS.js"><\/script>');
-  document.write('<script src="../JackOS-macOS-System-Files/JackOS-macOS-apps.js"><\/script>');
-  document.write('<script src="../JackOS-macOS-System-Files/JackOS-macOS-desktop.js"><\/script>');
-}
-</script>
 
 </body>
 </html>

@@ -1,11 +1,84 @@
 {
-  "latestRelease": "JackOS v5 Beta 2",
+  "latestRelease": "JackOS v5.1",
   "sandboxInfo": {
     "available": true,
     "title": "Testing Older Versions",
     "text": "Users running JackOS Pro or JackOS Elite on JackOS v5 Beta 1 or later can test previous JackOS releases using the JackOS Sandbox Emulator. The Sandbox Emulator allows older versions to run in an isolated environment without affecting the host system or user data."
   },
   "releases": [
+    {
+      "version": "JackOS v5.1",
+      "releaseDate": "1st November 2026",
+      "summary": "HTTP Server Wiring and Bug Fixes.",
+      "overview": "JackOS v5.1 adds bug fixes that was created when JackOS macOS came out.",
+      "sections": [
+        {
+          "title": "HTTP Server Wiring",
+          "items": [
+            "When JackOS macOS came out, the HTTP Server was not wired up to the system. This meant that JackOS macOS was limited due to the broken server. This update fixes that issue and wires up the HTTP Server to the system."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "JackOS v5.0",
+      "releaseDate": "1st November 2026",
+      "summary": "The first stable release of JackOS v5.",
+      "overview": "JackOS v5.0 is the first stable release of the JackOS v5 series, building upon the features introduced in Beta 3.",
+      "sections": [
+        {
+          "title": "JackOS v5.0 Release",
+          "items": [
+            "This was first update in JackOS v5."
+          ]
+        }
+      ]
+    },
+    {
+    "version": "JackOS v5 Beta 3",
+    "releaseDate": "26th October 2026",
+    "summary": "The biggest JackOS update yet, turning it into a real desktop operating system.",
+    "overview": "JackOS v5 Beta 3 is a major expansion of the JackOS experience, adding a redesigned desktop workflow, a real Messages app, Notifications, Recovery, stronger account security, per-user taskbars and desktop layouts, built-in games, and a complete Restrictions & Screen Time system.",
+    "sections": [
+        {
+            "title": "Desktop & Taskbar",
+            "items": [
+                "Redesigned desktop into a free-form, per-user desktop environment.",
+                "Upgraded taskbar to support per-user pins, active indicators, and built-in search."
+            ]
+        },
+        {
+            "title": "Communication & Alerts",
+            "items": [
+                "Introduced a full Messages app featuring direct messages (DMs) and group chats.",
+                "Added a comprehensive Notification Centre alongside app icon badges."
+            ]
+        },
+        {
+            "title": "System, Security & Recovery",
+            "items": [
+                "Built a complete standalone Recovery Environment.",
+                "Strengthened account security with Security Questions and a Recovery Key system.",
+                "Improved the protected system backup and restore process."
+            ]
+        },
+        {
+            "title": "Management & Control",
+            "items": [
+                "Implemented full Restrictions and a Screen Time monitoring system.",
+                "Expanded account management to isolate per-user data, applications, layouts, and system permissions.",
+                "Upgraded the App Store with per-user apps, explicit permission settings, and approval requests."
+            ]
+        },
+        {
+            "title": "Entertainment",
+            "items": [
+                "Enhanced the Games launcher and introduced standalone built-in games."
+            ]
+        }
+    ]
+    },
+
     {
         "version": "JackOS v5 Beta 2",
         "releaseDate": "15th September 2026",

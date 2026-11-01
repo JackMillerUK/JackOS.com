@@ -1,5 +1,5 @@
 //JackOS.js
-// JackOS Core JS (v5.0 1st November 2026 Release)
+// JackOS Core JS (v5.1 1st November 2026 Release)
 
 
 
@@ -7,7 +7,7 @@
 
 // New JackOS Specs Variables For New Activation System (released v5 Beta 3)
 const JACKOS_IS_MACOS = window.JACKOS_EDITION_MODE === 'macos';
-const JACKOS_VERSION = "5.0";
+const JACKOS_VERSION = "5.1";
 
 let JACKOS_EDITION =
   localStorage.getItem(

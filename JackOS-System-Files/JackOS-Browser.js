@@ -1,7 +1,7 @@
 //JackOS-Browser.js
 // ===== Browser =====
 function Browser_getHome(){
-  const fallback='https://apple.com/uk';
+  const fallback='https://bing.com';
   try {
     const saved=localStorage.getItem('jackosBrowserHome');
     if(!saved||/^(?:https?:\/\/)?(?:www\.)?purplemash\.com(?:[/?#]|$)/i.test(saved.trim())){
@@ -19,10 +19,7 @@ function Browser_open(){
   const frame = document.getElementById('browserFrame');
   const fb = document.getElementById('browserFallback');
   const url = document.getElementById('browserUrl');
-JackOSInput.prepareFrame(frame, {
-  game: true,
-  autoPointerLock: false
-});
+JackOSInput.prepareFrame(frame, { game: false, pointerLock: true });
   browserState.frame = frame;
   browserState.urlInput = url;
   browserState.fb = fb;
@@ -41,13 +38,6 @@ JackOSInput.prepareFrame(frame, {
     WindowManager.focus('browserWin');
   }
 
-  if (typeof JackOSInput !== 'undefined') {
-    JackOSInput.prepareFrame(frame, {
-      game: true,
-      autoPointerLock: false
-    });
-  }
-
   url.value = BROWSER_HOME;
 
   setTimeout(() => {
@@ -56,7 +46,7 @@ JackOSInput.prepareFrame(frame, {
 }
 
 function Browser_sanitize(u){ u=(u||'').trim(); if(!u) return ''; const hasScheme=JACKOS_IS_MACOS ? /^https?:\/\//i.test(u) : /^https?:\/_\/_\//i.test(u); if(!hasScheme){ if(/^[\w.-]+\.[A-Za-z]{2,}/.test(u)) return 'https://'+u; return 'https://www.google.com/search?q='+ encodeURIComponent(u); } return u; }
-function Browser_navigate(u){ const url=Browser_sanitize(u); if(!url) return; browserState.fb.style.display='none'; browserState.frame.src='about:blank'; setTimeout(()=>{ try{ browserState.frame.src=url; }catch(e){} browserState.history = browserState.history.slice(0, browserState.index+1); browserState.history.push(url); browserState.index = browserState.history.length-1; browserState.urlInput.value=url; if(typeof Browser_checkFallback==='function') setTimeout(Browser_checkFallback, 1200); }, 10); }
+function Browser_navigate(u){ const url=Browser_sanitize(u); if(!url) return; const game=JackOSInput.isGameUrl(url); JackOSInput.prepareFrame(browserState.frame,{game,autoPointerLock:game,pointerLock:true}); browserState.fb.style.display='none'; browserState.frame.src='about:blank'; setTimeout(()=>{ try{ browserState.frame.src=url; }catch(e){} browserState.history = browserState.history.slice(0, browserState.index+1); browserState.history.push(url); browserState.index = browserState.history.length-1; browserState.urlInput.value=url; if(typeof Browser_checkFallback==='function') setTimeout(Browser_checkFallback, 1200); }, 10); }
 
 function Browser_go(){ Browser_navigate(browserState.urlInput.value); }
 function Browser_back(){ if(browserState.index>0){ browserState.index--; const u=browserState.history[browserState.index]; browserState.urlInput.value=u; Browser_navigate(u); } }

@@ -1,6 +1,13 @@
 {
   "versions": [
     {
+      "version": "JackOS v5 Beta 3",
+      "description": "The major update to JackOS. The final beta version before JackOS v5.0 Release.",
+      "releaseDate": "26th October 2026",
+      "safe": true,
+      "pathway": "Old-Versions/JackOS-v5-Beta-3/JackOS-System-Files/JackOS.html"
+    },    
+    {
       "version": "JackOS v5 Beta 2",
       "description": "First Public v5 Beta Release. Added quite a lot of features including Sandbox Emulator",
       "releaseDate": "15th September 2026",

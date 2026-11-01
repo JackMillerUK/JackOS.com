@@ -40,8 +40,12 @@ backwards compatibility.
 
 The following behavior remains edition-specific inside shared files:
 
-- `JackOS-Browser.js`: navigation is shared; the homepage and URL-scheme
-  handling retain the existing Classic and macOS behavior.
+- `JackOS-Browser.js`: homepage migration and URL/search normalization are
+  shared. The macOS browser keeps its tab and browser-service layer while
+  using the shared address normalization; localhost service URLs remain
+  supported. Both editions default to `https://bing.com`; the previous
+  Apple UK and Purple Mash defaults migrate to Bing while other saved
+  homepages are retained.
 - `JackOS-Calculator.js` and `JackOS-Games.js`: calculations, games, and score
   storage are shared; macOS window visibility and overlay-aware keyboard
   handling remain conditional.

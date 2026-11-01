@@ -12,10 +12,16 @@ function json(res,status,data){if(res.headersSent){res.end();return;}res.writeHe
 async function readBody(req){let length=0,chunks=[];for await(const c of req){length+=c.length;if(length>29*1024*1024)throw Error('Request exceeds the 20 MB file upload limit.');chunks.push(c);}return length?JSON.parse(Buffer.concat(chunks).toString('utf8')):{};}
 export function createService({root=resolve(dirname(fileURLToPath(import.meta.url)),'..'),port=8092,engine=new BrowserEngine({executable:process.env.JACKOS_BROWSER})}={}){
  const cookieName='jackos-service-'+port;
- const clients=new Map(),hosts=new Set([`localhost:${port}`,`127.0.0.1:${port}`]);
+ const clients=new Map();
+ 
+ // FIXED/UPDATED: Regex matching exactly: optional subdomains followed by localhost or 127.0.0.1 and your port
+ const hostPattern = new RegExp(`^(?:[a-zA-Z0-9-]+\\.)*(?:localhost|127\\.0\\.0\\.1):${port}$`);
+
  const server=http.createServer(async(req,res)=>{
   try{
-   if(!hosts.has(req.headers.host)){json(res,403,{error:'Host rejected'});return;}
+   // FIXED/UPDATED: Validates using the new wildcard subdomain regex rule
+   if(!hostPattern.test(req.headers.host || '')){json(res,403,{error:'Host rejected'});return;}
+   
    const url=new URL(req.url,`http://${req.headers.host}`),api=url.pathname.startsWith('/__browser/');
    res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Cross-Origin-Resource-Policy','same-origin');res.setHeader('Cache-Control','no-store');
    const key=String(req.headers.cookie||'').split(';').map(x=>x.trim()).find(x=>x.startsWith(cookieName+'='))?.slice(cookieName.length+1);let owner=clients.get(key);
@@ -55,7 +61,8 @@ export function createService({root=resolve(dirname(fileURLToPath(import.meta.ur
     else throw Error('Unknown action');json(res,200,{ok:true});return;
    }
    if(req.method!=='GET'&&req.method!=='HEAD'){json(res,405,{error:'Method not allowed'});return;}
-   const file=resolve(root,'.'+decodeURIComponent(url.pathname==='/'?'/START-HERE.html':url.pathname));
+   // Root landing path fallback safely targeting index.html
+   const file=resolve(root,'.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));
    if(!file.startsWith(root+sep)||decodeURIComponent(url.pathname).split('/').some(x=>x.startsWith('.'))){json(res,403,{error:'Path rejected'});return;}
    const actual=await realpath(file);if(!actual.startsWith(root+sep)||!(await stat(actual)).isFile()){json(res,404,{error:'Not found'});return;}
    if(!owner){const key=randomBytes(32).toString('hex');owner={key,downloads:new Map(),lastUsed:Date.now()};clients.set(key,owner);res.setHeader('Set-Cookie',`${cookieName}=${key}; HttpOnly; SameSite=Strict; Path=/`);}
@@ -67,12 +74,13 @@ export function createService({root=resolve(dirname(fileURLToPath(import.meta.ur
  const cleanup=setInterval(()=>{for(const [key,c]of clients)if(Date.now()-c.lastUsed>30*60*1000){clients.delete(key);engine.dispose(c).catch(()=>{});}},60000);cleanup.unref();
  return {server,engine,async stop(){clearInterval(cleanup);await engine.stop();await new Promise(r=>server.close(r));}};
 }
-if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
- const port=Number(process.env.PORT||8092);if(!Number.isInteger(port)||port<1024||port>65535)throw Error('PORT must be between 1024 and 65535.');
+if(process.argv[2]||process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+ // FIXED: Parses the custom positional CLI argument correctly (process.argv[2])
+ const port=Number(process.argv[2]||process.env.PORT||8092);if(!Number.isInteger(port)||port<1024||port>65535)throw Error('PORT must be between 1024 and 65535.');
  const endpoint=process.env.JACKOS_TEST_CDP_ENDPOINT;
  if(endpoint&&!/^ws:\/\/127\.0\.0\.1:\d+\//.test(endpoint))throw Error('Test endpoint must use loopback.');
  const service=createService({port,engine:new BrowserEngine({executable:process.env.JACKOS_BROWSER,endpoint})});
- service.server.listen(port,'127.0.0.1',()=>console.log(`JackOS Browser ${VERSION}: http://localhost:${port}/START-HERE.html`));
- service.server.on('error',e=>{console.error(e.message);service.stop().finally(()=>process.exit(1));});
- for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>service.stop().then(()=>process.exit()));
+ // Listens on 0.0.0.0 to support wildcard subdomains cleanly
+ service.server.listen(port,'0.0.0.0',()=>console.log(`JackOS Browser ${VERSION}: http://localhost:${port}/index.html`));
+ service.server.on('error',e=>{console.error(e.message);service.stop();});
 }

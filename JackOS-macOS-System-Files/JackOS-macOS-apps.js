@@ -9,7 +9,7 @@
   function initBrowser(){
     const win=$('#browserWin'),header=$('#browserHeader'),bar=$('#browserBar'),area=$('#browserArea'),input=$('#browserUrl'),template=$('#browserFrame');
     if(!win||!template)return;
-    const START='jackos:start',DEFAULT_HOME='https://apple.com/uk';
+    const START='jackos:start',DEFAULT_HOME='https://bing.com';
     function home(){return typeof Browser_getHome==='function'?Browser_getHome():DEFAULT_HOME;}let serial=0,active=null;const tabs=[];
     const strip=node('div','mac-browser-tabs');strip.setAttribute('role','tablist');strip.setAttribute('aria-label','Browser tabs');
     const tabRow=node('div','mac-browser-tab-row'),add=iconButton('New tab','plus',()=>newTab());tabRow.append(strip,add);header.after(tabRow);
@@ -35,6 +35,7 @@
       return 'https://www.google.com/search?q='+encodeURIComponent(text);
     }
     function current(tab=active){return tab?.history[tab.index]||START;}
+    function gamePage(tab){return typeof JackOSInput!=='undefined'&&JackOSInput.isGameUrl(current(tab));}
     function remote(url){try{return /^https?:$/.test(new URL(url).protocol)&&new URL(url).origin!==location.origin;}catch{return false;}}
     function frameURL(url,tab){return tab?.remoteSession?'/browser-service/view.html?id='+tab.remoteSession:url===START?'about:blank':remote(url)?'/browser-service/view.html?url='+encodeURIComponent(url):url;}
     function title(tab){if(tab?.remoteState?.title)return tab.remoteState.title.slice(0,60);const url=current(tab);if(url===START)return 'Start Page';try{return new URL(url).hostname.replace(/^www\./,'');}catch{return 'Browser';}}
@@ -46,7 +47,7 @@
         choose.onkeydown=e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();let index=tabs.indexOf(tab);index=e.key==='Home'?0:e.key==='End'?tabs.length-1:(index+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;select(tabs[index]);$('#mac-browser-tab-'+active.id)?.focus();}};
         const close=node('button','mac-browser-tab-close','×');close.type='button';close.title='Close tab';close.setAttribute('aria-label','Close '+title(tab)+' tab');close.onclick=()=>closeTab(tab);item.append(choose,close);strip.append(item);
         tab.frame.hidden=tab!==active||current(tab)===START;
-        if(remote(current(tab)))tab.frame.contentWindow?.postMessage({action:'visibility',visible:tab===active&&win.style.display!=='none'&&!win.classList.contains('window-minimized')},location.origin);
+        if(remote(current(tab)))tab.frame.contentWindow?.postMessage({action:'visibility',visible:tab===active&&win.style.display!=='none'&&!win.classList.contains('window-minimized'),pointerLock:tab===active&&gamePage(tab)},location.origin);
       }
       const isStart=current()===START;start.hidden=!isStart;hint.hidden=isStart||remote(current());win.classList.toggle('mac-browser-web',!isStart&&!remote(current()));input.value=isStart?'':current();
       $('#browserBack').disabled=active?.remoteState?!active.remoteState.canBack:!active||active.index<=0;$('#browserFwd').disabled=active?.remoteState?!active.remoteState.canForward:!active||active.index>=active.history.length-1;$('#browserRefresh').disabled=isStart;
@@ -57,8 +58,8 @@
       const frame=tabs.length||serial?template.cloneNode(false):template;const tab={id:++serial,frame,history:[remoteSession?url:clean(url)],index:0,suspended:false,remoteSession};
       if(frame!==template){frame.id='mac-browser-frame-'+tab.id;area.append(frame);}
       frame.setAttribute('aria-labelledby','mac-browser-tab-'+tab.id);frame.title=title(tab);
-      if(typeof JackOSInput!=='undefined')JackOSInput.prepareFrame(frame,{game:false,autoPointerLock:false});
-      frame.addEventListener('load',()=>{frame.contentWindow?.postMessage({action:'visibility',visible:tab===active&&win.style.display!=='none'&&!win.classList.contains('window-minimized')},location.origin);});
+      if(typeof JackOSInput!=='undefined')JackOSInput.prepareFrame(frame,{game:gamePage(tab),autoPointerLock:gamePage(tab),pointerLock:true});
+      frame.addEventListener('load',()=>{frame.contentWindow?.postMessage({action:'visibility',visible:tab===active&&win.style.display!=='none'&&!win.classList.contains('window-minimized'),pointerLock:tab===active&&gamePage(tab)},location.origin);});
       frame.src=frameURL(current(tab),tab);
       tabs.push(tab);select(tab);if(remoteSession)frame.focus();else input.focus();return tab;
     }
@@ -66,7 +67,7 @@
     function navigate(value){
       if(!active)newTab();const url=clean(value);if(active.remoteState?.engineRelease===2&&remote(url)){active.frame.contentWindow.postMessage({action:'navigate',url},location.origin);return;}active.remoteSession=null;active.history.splice(active.index+1);if(url!==current()){active.history.push(url);active.index=active.history.length-1;}loadCurrent();
     }
-    function loadCurrent(){active.remoteState=null;active.frame.src=frameURL(current(),active);active.frame.title=title(active);active.suspended=false;render();}
+    function loadCurrent(){active.remoteState=null;if(typeof JackOSInput!=='undefined')JackOSInput.prepareFrame(active.frame,{game:gamePage(active),autoPointerLock:gamePage(active),pointerLock:true});active.frame.src=frameURL(current(),active);active.frame.title=title(active);active.suspended=false;render();}
     window.Browser_sanitize=clean;window.Browser_navigate=navigate;window.Browser_go=()=>navigate(input.value);
     window.Browser_back=()=>{if(active?.remoteState)active.frame.contentWindow.postMessage({action:'back'},location.origin);else if(active?.index>0){active.index--;loadCurrent();}};
     window.Browser_forward=()=>{if(active?.remoteState)active.frame.contentWindow.postMessage({action:'forward'},location.origin);else if(active&&active.index<active.history.length-1){active.index++;loadCurrent();}};
@@ -80,8 +81,8 @@
       else {select(active);if(current()!==START&&(!active.frame.getAttribute('src')||active.frame.getAttribute('src')==='about:blank'))loadCurrent();}
       window.JackOSMac?.sync();
     };
-    const close=()=>{win.style.display='none';for(const tab of tabs)tab.frame.contentWindow?.postMessage({action:'visibility',visible:false},location.origin);};
-    if(typeof APP_REGISTRY!=='undefined')APP_REGISTRY.browser.close=close;new MutationObserver(()=>{for(const tab of tabs)tab.frame.contentWindow?.postMessage({action:'visibility',visible:tab===active&&win.style.display!=='none'&&!win.classList.contains('window-minimized')},location.origin);}).observe(win,{attributes:true,attributeFilter:['class','style']});
+    const close=()=>{win.style.display='none';for(const tab of tabs){tab.frame.src='about:blank';if(tab.frame!==template)tab.frame.remove();}tabs.length=0;active=null;template.hidden=true;render();};
+    if(typeof APP_REGISTRY!=='undefined')APP_REGISTRY.browser.close=close;new MutationObserver(()=>{for(const tab of tabs){const visible=tab===active&&win.style.display!=='none'&&!win.classList.contains('window-minimized');tab.frame.contentWindow?.postMessage({action:'visibility',visible,pointerLock:visible&&gamePage(tab)},location.origin);}}).observe(win,{attributes:true,attributeFilter:['class','style']});
     document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='l'&&win.style.display!=='none'&&!win.classList.contains('mac-inactive')){e.preventDefault();input.focus();input.select();}});
     window.JackOSMacBrowser={newTab,closeTab:()=>active&&closeTab(active),snapshot:()=>({count:tabs.length,url:current(),index:active?.index,history:active?[...active.history]:[]}),sanitize:clean};
   }
