@@ -878,10 +878,30 @@ Media
       <div id="browserBar">
         <button id="browserBack" title="Back">⟵</button>
         <button id="browserFwd" title="Forward">⟶</button>
+        <button id="browserHome" title="Home">⌂</button>
         <button id="browserRefresh" title="Refresh">⟳</button>
         <input id="browserUrl" placeholder="Enter URL" value="https://bing.com" />
       </div>
       <div id="browserArea">
+        <section id="browserStartPage" aria-label="Browser start page">
+          <div class="browser-start-content">
+            <p class="browser-start-eyebrow">JACKOS BROWSER</p>
+            <h1>A little space to explore.</h1>
+            <form id="browserStartSearch" class="browser-start-search">
+              <span aria-hidden="true">⌕</span>
+              <input id="browserStartSearchInput" type="search" placeholder="Search the web" aria-label="Search the web" autocomplete="off" />
+              <button type="submit">Search</button>
+            </form>
+            <h2>Quick links</h2>
+            <nav class="browser-quick-links" aria-label="Quick links">
+              <a href="https://www.wikipedia.org/">Wikipedia</a>
+              <a href="https://github.com/">GitHub</a>
+              <a href="https://www.bbc.co.uk/">BBC</a>
+              <a href="https://www.nationalgeographic.com/">National Geographic</a>
+            </nav>
+            <p class="browser-start-caption">Your next idea starts here.</p>
+          </div>
+        </section>
         <iframe
   id="browserFrame"
   tabindex="0"

@@ -9,14 +9,16 @@
   function initBrowser(){
     const win=$('#browserWin'),header=$('#browserHeader'),bar=$('#browserBar'),area=$('#browserArea'),input=$('#browserUrl'),template=$('#browserFrame');
     if(!win||!template)return;
-    const START='jackos:start',DEFAULT_HOME='https://bing.com';
-    function home(){return typeof Browser_getHome==='function'?Browser_getHome():DEFAULT_HOME;}let serial=0,active=null;const tabs=[];
+    const classicStart=$('#browserStartPage');
+    if(classicStart)classicStart.hidden=true;
+    const START='jackos:start';
+    let serial=0,active=null;const tabs=[];
     const strip=node('div','mac-browser-tabs');strip.setAttribute('role','tablist');strip.setAttribute('aria-label','Browser tabs');
     const tabRow=node('div','mac-browser-tab-row'),add=iconButton('New tab','plus',()=>newTab());tabRow.append(strip,add);header.after(tabRow);
     header.append(bar);header.querySelector('.title').hidden=true;
     input.placeholder='Search or enter website name';input.setAttribute('aria-label','Website address or search');input.autocomplete='off';input.spellcheck=false;
     const address=node('div','mac-browser-address'),search=node('span','mac-address-symbol');search.innerHTML=svg('search');address.append(search,input,$('#browserRefresh'));
-    bar.replaceChildren($('#browserBack'),$('#browserFwd'),iconButton('Home','home',()=>navigate(home())),address);
+    bar.replaceChildren($('#browserBack'),$('#browserFwd'),iconButton('Home','home',()=>navigate(START)),address);
     const start=node('section','mac-browser-start');start.setAttribute('aria-label','Browser start page');
     const content=node('div','mac-start-content');content.append(node('p','mac-start-eyebrow','JACKOS BROWSER'),node('h1','','A little space to explore.'));
     const form=node('form','mac-start-search');form.innerHTML=svg('search');const field=node('input');field.type='search';field.placeholder='Search the web';field.setAttribute('aria-label','Search the web');form.append(field);form.onsubmit=e=>{e.preventDefault();if(field.value.trim())navigate(field.value);};
@@ -54,7 +56,7 @@
       browserState.frame=active?.frame;browserState.history=active?.history||[];browserState.index=active?.index??-1;browserState.urlInput=input;browserState.fb=$('#browserFallback');browserState.win=win;
     }
     function select(tab){active=tab;if(tab.suspended&&current(tab)!==START){tab.frame.src=frameURL(current(tab),tab);tab.suspended=false;}render();}
-    function newTab(url=home(),remoteSession=null){
+    function newTab(url=START,remoteSession=null){
       const frame=tabs.length||serial?template.cloneNode(false):template;const tab={id:++serial,frame,history:[remoteSession?url:clean(url)],index:0,suspended:false,remoteSession};
       if(frame!==template){frame.id='mac-browser-frame-'+tab.id;area.append(frame);}
       frame.setAttribute('aria-labelledby','mac-browser-tab-'+tab.id);frame.title=title(tab);
@@ -64,8 +66,15 @@
       tabs.push(tab);select(tab);if(remoteSession)frame.focus();else input.focus();return tab;
     }
     function closeTab(tab){const index=tabs.indexOf(tab);tabs.splice(index,1);tab.frame.src='about:blank';tab.frame.remove();if(!tabs.length){newTab();return;}if(active===tab)select(tabs[Math.min(index,tabs.length-1)]);else render();}
-    function navigate(value){
-      if(!active)newTab();const url=clean(value);if(active.remoteState?.engineRelease===2&&remote(url)){active.frame.contentWindow.postMessage({action:'navigate',url},location.origin);return;}active.remoteSession=null;active.history.splice(active.index+1);if(url!==current()){active.history.push(url);active.index=active.history.length-1;}loadCurrent();
+    async function navigate(value){
+      if(!active)newTab();
+      const target=active,text=String(value||'').trim();
+      const url=text!==START&&typeof Browser_isSearchQuery==='function'&&Browser_isSearchQuery(text)
+        ?await Browser_searchUrl(text)
+        :clean(text);
+      if(active!==target)return;
+      if(active.remoteState?.engineRelease===2&&remote(url)){active.frame.contentWindow.postMessage({action:'navigate',url},location.origin);return;}
+      active.remoteSession=null;active.history.splice(active.index+1);if(url!==current()){active.history.push(url);active.index=active.history.length-1;}loadCurrent();
     }
     function loadCurrent(){active.remoteState=null;if(typeof JackOSInput!=='undefined')JackOSInput.prepareFrame(active.frame,{game:gamePage(active),autoPointerLock:gamePage(active),pointerLock:true});active.frame.src=frameURL(current(),active);active.frame.title=title(active);active.suspended=false;render();}
     window.Browser_sanitize=clean;window.Browser_navigate=navigate;window.Browser_go=()=>navigate(input.value);
@@ -77,7 +86,7 @@
     for(const [id,label,name,handler] of [['browserBack','Back','back',window.Browser_back],['browserFwd','Forward','forward',window.Browser_forward],['browserRefresh','Reload page','reload',window.Browser_refresh]]){const b=document.getElementById(id);b.type='button';b.className='mac-browser-button';b.title=label;b.setAttribute('aria-label',label);b.innerHTML=svg(name);b.onclick=handler;}
     window.Browser_open=()=>{
       win.style.display='block';WindowManager.show('browserWin');
-      if(!tabs.length)newTab(home());
+      if(!tabs.length)newTab(START);
       else {select(active);if(current()!==START&&(!active.frame.getAttribute('src')||active.frame.getAttribute('src')==='about:blank'))loadCurrent();}
       window.JackOSMac?.sync();
     };

@@ -26,6 +26,7 @@
 .jackos-macos #browserWin.mac-browser-web #browserArea{bottom:33px}
 .jackos-macos #browserArea iframe.mac-browser-frame{display:block;width:100%;height:100%;border:0;border-radius:0;background:white}
 .jackos-macos #browserArea [hidden],.jackos-macos .mac-browser-hint[hidden]{display:none!important}
+.jackos-macos #browserArea>#browserStartPage{display:none!important}
 .jackos-macos .mac-browser-start{height:100%;overflow:auto;background:linear-gradient(125deg,#ebf3ff,#f5f0f9 55%,#fde9e0);position:relative}
 .jackos-macos .mac-browser-start:before{content:'';position:absolute;inset:0;background:var(--mac-wallpaper) center/cover;opacity:.11;pointer-events:none}
 .jackos-macos .mac-start-content{position:relative;width:min(660px,100%);margin:0 auto;padding:clamp(30px,5vh,70px) 32px 35px}
