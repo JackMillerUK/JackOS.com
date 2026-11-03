@@ -384,6 +384,8 @@ const archiveRoot =
 
   
   if(
+  !options.cloudSyncRestore
+  &&
   manifest.version
   !==
   JACKOS_VERSION
@@ -720,7 +722,7 @@ async function Backup_restoreCloud(
     window.confirm =
       ()=>true;
 
-    const restored=await Backup_restore(file,options);
+    const restored=await Backup_restore(file,{...options,cloudSyncRestore:true});
     if(!restored?.ok) return restored;
     return {ok:true,message:options.recoveryFlow?'Cloud backup data restored successfully.':'Cloud backup restored successfully.'};
 

@@ -4,54 +4,40 @@
       "key": "andr-eask-anel-losg-len",
       "edition": "Pro",
       "upgrade": true,
-      "cloudSync": "../Cloud/Sync/Andreas/JackOS-System-Backup.zip",
-      "block":false,
-      "block-pass":"andreas"
+      "cloudSync": "../Cloud/Sync/Andreas/JackOS-System-Backup.zip"
     },
     {
       "key": "270618",
       "edition": "Pro",
       "upgrade": true,
-      "cloudSync": "../Cloud/Sync/Aayan/JackOS-System-Backup.zip",
-      "block":false,
-      "block-pass":"7djww"
+      "cloudSync": "../Cloud/Sync/Aayan/JackOS-System-Backup.zip"
     },
     {
       "key": "ua7-ajsa7-uAS-2j3",
       "edition": "Pro",
-      "upgrade": true,
-      "block":false,
-      "block-pass":"5678"
+      "upgrade": true
     },
     {
       "key": "JACK-MILL-ER25-1214",
       "edition": "Pro",
       "upgrade": true,
-      "cloudSync": "../Cloud/Sync/Jack/JackOS-System-Backup.zip",
-      "block":false,
-      "block-pass":"JackOS-CEO"
+      "cloudSync": "../Cloud/Sync/Jack/JackOS-System-Backup.zip"
     },
     {
         "key": "AYMEN-ACTIVATION-KEY",
-        "edition": "Private",
-        "upgrade": false,
-        "cloudSync": "../Cloud/Sync/Aymen/JackOS-System-Backup.zip",
-        "block":true,
-        "block-pass":"ausnq"
+        "edition": "Pro",
+        "upgrade": true,
+        "cloudSync": "../Cloud/Sync/Aymen/JackOS-System-Backup.zip"
     },
     {
         "key": "OTHE-RPRO-USER-S",
         "edition": "Pro",
-        "upgrade": true,
-        "block":true,
-        "block-pass":"PRO-USER"
+        "upgrade": true
     },
     {
         "key": "GUES-TACT-IVAT-ION",
         "edition": "Home",
-        "upgrade": false,
-      "block":true,
-      "block-pass":"GUEST-USER"
+        "upgrade": false
     }
   ]
 }
